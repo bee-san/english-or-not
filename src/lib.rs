@@ -2,12 +2,15 @@ use phf::phf_set;
 use std::collections::HashMap;
 use std::collections::HashSet;
 
-lazy_static::lazy_static! {
-    static ref ENGLISH_WORDS: HashSet<&'static str> = {
-        let contents = include_str!("../words_alpha.txt");
-        contents.lines().collect()
-    };
+mod dictionary;
+
+fn is_english_word(word: &str) -> bool {
+    dictionary::is_english_word(word)
 }
+
+// The dictionary module provides a perfect hash table implementation
+// using a match statement, which is generated at compile time
+// for optimal performance and memory efficiency
 
 
 
@@ -136,7 +139,7 @@ fn calculate_word_score(text: &str) -> f64 {
     }
 
     let valid_word_count = words.iter()
-        .filter(|word| ENGLISH_WORDS.contains(word.to_string().as_str()))
+        .filter(|word| is_english_word(word))
         .count() as f64;
 
     valid_word_count / words.len() as f64
