@@ -12,9 +12,10 @@ The library uses a comprehensive approach combining six different analysis metho
    - Quadgrams (4-character sequences)
    Each n-gram type is weighted differently in the final score.
 
-2. **Common Word Detection**
-   - Maintains a list of 40 most common English words
-   - Calculates the ratio of common words in the text
+2. **Word List Detection**
+   - Uses a comprehensive list of 370,000+ English words from dwyl/english-words
+   - Calculates the ratio of valid English words in the text
+   - Words list is loaded at compile time for optimal performance
 
 3. **Letter Frequency Analysis**
    - Compares letter frequencies with standard English letter distribution
