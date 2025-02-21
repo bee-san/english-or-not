@@ -140,31 +140,49 @@ The library includes:
 - Memory usage proportional to text length
 - Thread-safe and `Send + Sync`
 
-## Future Improvements
+## Future Improvements and TODO List
 
-1. Enhanced Accuracy
-   - [ ] Add word-level n-grams analysis
-   - [ ] Implement machine learning classification
-   - [ ] Add support for contractions and common abbreviations
-   - [ ] Include position-aware n-gram scoring
+### Accuracy Improvements
+- [ ] Add support for common abbreviations and contractions
+- [ ] Implement position-aware n-gram scoring
+- [ ] Add word-level n-grams analysis
+- [ ] Consider implementing machine learning classification
+- [ ] Add handling for common misspellings
 
-2. Features
-   - [ ] Return confidence scores (0.0 to 1.0)
-   - [ ] Add language variant detection (US/UK English)
-   - [ ] Support for analyzing text streams
-   - [ ] Configurable scoring weights
+### Feature Enhancements
+- [ ] Return confidence scores (0.0 to 1.0)
+- [ ] Add language variant detection (US/UK English)
+- [ ] Support for analyzing text streams
+- [ ] Configurable scoring weights
+- [ ] Add CLI interface for easy usage
+- [ ] Create web API endpoint
 
-3. Performance
-   - [ ] Implement parallel processing for long texts
-   - [ ] Add result caching for repeated checks
-   - [ ] Optimize memory usage for large texts
-   - [ ] Add SIMD optimizations
+### Performance Optimizations
+- [ ] Implement parallel processing for long texts
+- [ ] Add result caching for repeated checks
+- [ ] Optimize memory usage for large texts
+- [ ] Add SIMD optimizations
+- [ ] Explore bloom filters for faster word lookups
 
-4. Developer Experience
-   - [ ] Add more comprehensive documentation
-   - [ ] Provide Jupyter notebook examples
-   - [ ] Create benchmarking suite
-   - [ ] Add fuzzing tests
+### Developer Experience
+- [ ] Add comprehensive API documentation
+- [ ] Provide Jupyter notebook examples
+- [ ] Create benchmarking suite
+- [ ] Add fuzzing tests
+- [ ] Improve error handling and logging
+- [ ] Add more detailed test cases
+
+### CI/CD Improvements
+- [ ] Add code coverage reporting
+- [ ] Implement automated benchmarking
+- [ ] Add security scanning
+- [ ] Set up automated dependency updates
+
+### Documentation
+- [ ] Add usage examples for different scenarios
+- [ ] Create architecture overview
+- [ ] Add performance characteristics
+- [ ] Document the scoring algorithm in detail
 
 ## Contributing
 
