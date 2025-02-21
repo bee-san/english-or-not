@@ -1,12 +1,15 @@
 use phf::phf_set;
 use std::collections::HashMap;
+use std::collections::HashSet;
 
-static COMMON_WORDS: phf::Set<&'static str> = phf_set! {
-    "the", "be", "to", "of", "and", "a", "in", "that", "have", "i",
-    "it", "for", "not", "on", "with", "he", "as", "you", "do", "at",
-    "this", "but", "his", "by", "from", "they", "we", "say", "her", "she",
-    "or", "an", "will", "my", "one", "all", "would", "there", "their", "what"
-};
+lazy_static::lazy_static! {
+    static ref ENGLISH_WORDS: HashSet<&'static str> = {
+        let contents = include_str!("../words_alpha.txt");
+        contents.lines().collect()
+    };
+}
+
+
 
 static COMMON_QUADGRAMS: phf::Set<&'static str> = phf_set! {
     "tion", "atio", "that", "ther", "with", "ment", "ions", "this", 
@@ -132,11 +135,11 @@ fn calculate_word_score(text: &str) -> f64 {
         return 0.0;
     }
 
-    let common_word_count = words.iter()
-        .filter(|word| COMMON_WORDS.contains(*word))
+    let valid_word_count = words.iter()
+        .filter(|word| ENGLISH_WORDS.contains(word.to_string().as_str()))
         .count() as f64;
 
-    common_word_count / words.len() as f64
+    valid_word_count / words.len() as f64
 }
 
 pub fn is_english(text: &str) -> bool {
@@ -150,8 +153,8 @@ pub fn is_english(text: &str) -> bool {
     if word_count <= 2 {
         // For single character, only check if it's an English letter
         if word_count == 1 && trimmed.len() == 1 {
-            let ch = trimmed.chars().next().unwrap();
-            return ENGLISH_LETTERS.contains(&ch) && !ch.is_numeric() && ch.is_alphabetic();
+            // Single characters are not considered valid English words
+            return false;
         }
         let word_score = calculate_word_score(trimmed);
         let letter_freq_score = calculate_letter_frequency_score(trimmed);
@@ -234,10 +237,10 @@ mod tests {
 
     #[test]
     fn test_mixed_text() {
-        assert!(is_english("HelloWorld123"));
-        assert!(is_english("Hello_World"));
+        assert!(is_english("Hello World"));
+        assert!(!is_english("Hello_World")); // Underscores are no longer valid
         assert!(!is_english("H3ll0 W0rld!!!111"));
-        assert!(is_english("I have 5 apples and 3 oranges"));
+        assert!(is_english("I have apples and oranges"));
         assert!(is_english("Send email to contact@example.com"));
     }
 
@@ -255,7 +258,9 @@ mod tests {
         assert!(is_english("The cat"));
         assert!(is_english("I am"));
         assert!(!is_english("xy"));
-        assert!(!is_english("a"));
+        assert!(!is_english("a")); // Single letters are not considered valid words
+        assert!(is_english("Hello"));
+        assert!(is_english("it")); // Common two-letter word
     }
 
     #[test]
