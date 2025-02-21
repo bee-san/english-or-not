@@ -12,13 +12,14 @@ The library uses a comprehensive approach combining six different analysis metho
    - Quadgrams (4-character sequences)
    Each n-gram type is weighted differently in the final score.
 
-2. **Dictionary Check**
+2. **Dictionary Check with Perfect Hash Table**
    - Uses a comprehensive list of 370,000+ English words from dwyl/english-words
-   - Words are loaded at compile time for optimal performance
-   - Calculates the ratio of valid English words in the text
+   - Implements a perfect hash table using a generated match statement
+   - Words are compiled into the binary for zero runtime loading overhead
+   - Provides O(1) lookup time for word validation
    - Handles both individual words and multi-word phrases
    - Includes common technical terms and proper nouns
-   - Optimized for fast lookups using a HashSet
+   - Memory efficient with no runtime allocations
 
 ### Scoring Weightings
 
