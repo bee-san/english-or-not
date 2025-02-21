@@ -13,15 +13,18 @@ fn main() -> io::Result<()> {
     writeln!(output, "pub fn is_english_word(word: &str) -> bool {{")?;
     writeln!(output, "    match word {{")?;
     
-    // Process input file
-    let input = File::open(input_file)?;
-    let reader = io::BufReader::new(input);
-    
-    for line in reader.lines() {
-        let word = line?.trim().to_string();
-        if !word.is_empty() {
-            writeln!(output, "        \"{}\" => true,", word)?;
+    // Try to process input file
+    if let Ok(input) = File::open(input_file) {
+        let reader = io::BufReader::new(input);
+        
+        for line in reader.lines() {
+            let word = line?.trim().to_string();
+            if !word.is_empty() {
+                writeln!(output, "        \"{}\" => true,", word)?;
+            }
         }
+    } else {
+        println!("Warning: words_alpha.txt not found - creating empty dictionary");
     }
     
     // Write footer
