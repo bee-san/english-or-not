@@ -39,20 +39,3 @@ jobs:
             
       - name: Run tests
         run: cargo test --verbose
-        
-      - name: Create PR if tests pass
-        if: github.ref == 'refs/heads/feature/word-list' && github.event_name == 'push'
-        uses: peter-evans/create-pull-request@v5
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          branch: feature/word-list
-          base: main
-          title: "Add GitHub CI workflow and word list improvements"
-          body: |
-            This PR adds:
-            - GitHub CI workflow for running tests
-            - Comprehensive word list from dwyl/english-words
-            - Optimized word list loading
-            - Updated test cases
-          draft: false
-          delete-branch: false
