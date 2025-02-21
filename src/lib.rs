@@ -2,10 +2,17 @@ use phf::phf_set;
 use std::collections::HashMap;
 use std::collections::HashSet;
 
-mod dictionary;
+use std::collections::HashSet;
+
+lazy_static::lazy_static! {
+    static ref ENGLISH_WORDS: HashSet<&'static str> = {
+        let contents = include_str!("../words_alpha.txt");
+        contents.lines().collect()
+    };
+}
 
 fn is_english_word(word: &str) -> bool {
-    dictionary::is_english_word(word)
+    ENGLISH_WORDS.contains(word)
 }
 
 // The dictionary module provides a perfect hash table implementation
