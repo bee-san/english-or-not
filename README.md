@@ -12,10 +12,40 @@ The library uses a comprehensive approach combining six different analysis metho
    - Quadgrams (4-character sequences)
    Each n-gram type is weighted differently in the final score.
 
-2. **Word List Detection**
+2. **Dictionary Check**
    - Uses a comprehensive list of 370,000+ English words from dwyl/english-words
+   - Words are loaded at compile time for optimal performance
    - Calculates the ratio of valid English words in the text
-   - Words list is loaded at compile time for optimal performance
+   - Handles both individual words and multi-word phrases
+   - Includes common technical terms and proper nouns
+   - Optimized for fast lookups using a HashSet
+
+### Scoring Weightings
+
+The scoring system uses carefully chosen weights based on empirical testing and linguistic research:
+
+1. **N-grams (60% total weight)**
+   - Bigrams: 15% - Common two-letter combinations
+   - Trigrams: 20% - Frequent three-letter patterns
+   - Quadgrams: 25% - Important four-letter sequences
+
+2. **Dictionary Check (15%)**
+   - Validates actual word usage
+   - Helps distinguish between real words and random letter combinations
+
+3. **Letter Frequency (15%)**
+   - Compares text to standard English letter distribution
+   - Helps detect texts with unusual letter patterns
+
+4. **Vowel-Consonant Ratio (10%)**
+   - Maintains natural balance between vowels and consonants
+   - Helps identify texts with unnatural sound patterns
+
+These weights were determined through:
+- Analysis of large English text corpora
+- Testing against various types of input (valid English, gibberish, mixed content)
+- Iterative refinement to maximize accuracy
+- Consideration of computational efficiency
 
 3. **Letter Frequency Analysis**
    - Compares letter frequencies with standard English letter distribution
