@@ -1,6 +1,9 @@
 [package]
-name = "IsItEnglishOrNot"
+name = "english-or-not"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+phf = { version = "0.11", features = ["macros"] }
+once_cell = "1.19"
+unicode-segmentation = "1.10"

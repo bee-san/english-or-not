@@ -263,4 +263,3 @@ mod tests {
         assert!(is_english("Hello123World"));
         assert!(!is_english("H3ll0 W0rld!!!111"));
     }
-}
