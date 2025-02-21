@@ -25,22 +25,26 @@ The library uses a comprehensive approach combining six different analysis metho
 
 The scoring system uses carefully chosen weights based on empirical testing and linguistic research:
 
-1. **N-grams (60% total weight)**
-   - Bigrams: 15% - Common two-letter combinations
-   - Trigrams: 20% - Frequent three-letter patterns
-   - Quadgrams: 25% - Important four-letter sequences
+1. **N-grams (45% total weight)**
+   - Bigrams: 10% - Common two-letter combinations
+   - Trigrams: 15% - Frequent three-letter patterns
+   - Quadgrams: 20% - Important four-letter sequences
 
-2. **Dictionary Check (15%)**
+2. **Dictionary Check (Dynamic Weight)**
+   - If any valid English words are found: 50%
+   - If no valid English words: 15%
    - Validates actual word usage
-   - Helps distinguish between real words and random letter combinations
+   - Strong indicator of English text when words are present
 
-3. **Letter Frequency (15%)**
+3. **Letter Frequency (10%)**
    - Compares text to standard English letter distribution
    - Helps detect texts with unusual letter patterns
 
-4. **Vowel-Consonant Ratio (10%)**
+4. **Vowel-Consonant Ratio (5%)**
    - Maintains natural balance between vowels and consonants
    - Helps identify texts with unnatural sound patterns
+
+The dynamic weighting for dictionary checks reflects that the presence of any valid English words is a strong indicator of English text, while maintaining other metrics for detecting patterns in non-word text.
 
 These weights were determined through:
 - Analysis of large English text corpora

@@ -204,13 +204,16 @@ pub fn is_english(text: &str) -> bool {
     };
 
     // Weighted combination of all scores
+    // If any word is a valid English word, significantly increase the score
+    let word_score_weight = if word_score > 0.0 { 0.5 } else { 0.15 };
+    
     let combined_score = (
-        0.15 * bigram_score +
-        0.20 * trigram_score +
-        0.25 * quadgram_score +
-        0.15 * letter_freq_score +
-        0.10 * vowel_consonant_score +
-        0.15 * word_score
+        0.10 * bigram_score +
+        0.15 * trigram_score +
+        0.20 * quadgram_score +
+        0.10 * letter_freq_score +
+        0.05 * vowel_consonant_score +
+        word_score_weight * word_score
     ) * repetition_penalty;
 
     // Threshold is now more strict due to better scoring
