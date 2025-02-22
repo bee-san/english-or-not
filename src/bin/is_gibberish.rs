@@ -1,5 +1,5 @@
 use std::env;
-use gibberish_detector::is_gibberish;
+use gibberish_or_not::is_gibberish;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
