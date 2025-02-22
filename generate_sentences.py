@@ -3,6 +3,7 @@ import string
 import requests
 import os
 import sys
+import time
 
 # Constants
 NUM_SENTENCES = 1000
@@ -46,8 +47,10 @@ def generate_english_sentences():
                 "https://openrouter.ai/api/v1/chat/completions",
                 headers=headers,
                 json=data,
-                timeout=10,
+                timeout=30,
             )
+            # Add a short delay between API calls
+            time.sleep(1)
             response.raise_for_status()
             sentences.append(
                 response.json()["choices"][0]["message"]["content"].strip()
