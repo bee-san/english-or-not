@@ -155,6 +155,11 @@ pub fn is_gibberish(text: &str) -> bool {
         return false;
     }
 
+    // Check if text contains at least one English character
+    if !text.chars().any(|c| ENGLISH_LETTERS.contains(&c)) {
+        return false;
+    }
+
     // Special handling for very short text (1-2 words)
     let word_count = trimmed.split_whitespace().count();
     if word_count <= 2 {
@@ -312,6 +317,14 @@ mod tests {
     fn test_control_characters() {
         let control_chars = "\0\0\0\0\0\u{1}\u{1}\0\u{1}\0\0\0\0\0\0\0\0\u{1}\u{1}\u{1}\0\u{1}";
         assert!(!is_gibberish(control_chars));
+    }
+
+    #[test]
+    fn test_non_english_characters() {
+        assert!(!is_gibberish("你好世界")); // Chinese
+        assert!(!is_gibberish("こんにちは")); // Japanese
+        assert!(!is_gibberish("★☆♠♣♥♦")); // Symbols
+        assert!(!is_gibberish("12345")); // Only numbers
     }
 
     #[test]
