@@ -113,7 +113,7 @@ pub fn is_gibberish(text: &str) -> bool {
     };
 
     // If either score is high enough, consider it English
-    if trigram_score > 0.2 || quadgram_score > 0.2 {
+    if trigram_score > 0.5 || quadgram_score > 0.5 {
         return false;
     }
 
