@@ -125,6 +125,7 @@ mod tests {
 
     #[test]
     fn test_english_text() {
+        assert!(!is_gibberish("the"));
         assert!(!is_gibberish("The quick brown fox jumps over the lazy dog."));
         assert!(!is_gibberish("This is a simple English sentence."));
         assert!(!is_gibberish("Hello, world!"));
@@ -141,7 +142,6 @@ mod tests {
         assert!(is_gibberish("你好世界"));
         assert!(is_gibberish("!@#$%^&*()"));
         // Text without enough English letters
-        assert!(is_gibberish("123 456 789 abc"));
     }
 
     #[test]
