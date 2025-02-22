@@ -327,6 +327,15 @@ mod tests {
     }
 
     #[test]
+    fn test_complex_control_sequences() {
+        let sequence1 = "\u{3} \u{e}@:\u{1}`\u{7}\u{18}\u{e}@/\u{1}<\u{e}p;An\u{2}p\u{19}`o\u{3}<\u{c}p6\u{1}J\u{2}p\u{18}`o\u{3}\r";
+        assert!(is_gibberish(sequence1));
+
+        let sequence2 = "\0*\0\u{1a}\0\r\u{10}\u{7}\u{18}\u{1}\0\u{1}R\0s\0\u{10}\0\u{18}`\rp\u{6}p\u{3}X\u{1}^\0l\0:@\u{1d}\0\u{c}P\u{6} \u{1}\u{e}";
+        assert!(is_gibberish(sequence2));
+    }
+
+    #[test]
     fn test_non_english_characters() {
         assert!(!is_gibberish("你好世界")); // Chinese
         assert!(!is_gibberish("こんにちは")); // Japanese
