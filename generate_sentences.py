@@ -25,7 +25,7 @@ def generate_local_english_sentences():
 
 def generate_english_sentences():
     sentences = []
-    api_key = os.getenv("openrouter")
+    api_key = os.getenv("OPENROUTER_API_KEY")
 
     if not api_key:
         print(
