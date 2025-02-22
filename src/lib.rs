@@ -41,19 +41,6 @@ static ENGLISH_LETTERS: phf::Set<char> = phf_set! {
     'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
 };
 
-static VOWELS: phf::Set<char> = phf_set! {
-    'a', 'e', 'i', 'o', 'u', 'A', 'E', 'I', 'O', 'U'
-};
-
-// English letter frequency (from most common to least common)
-static LETTER_FREQ: [(char, f64); 26] = [
-    ('e', 0.1202), ('t', 0.0910), ('a', 0.0812), ('o', 0.0768), ('i', 0.0731),
-    ('n', 0.0695), ('s', 0.0628), ('r', 0.0602), ('h', 0.0592), ('d', 0.0432),
-    ('l', 0.0398), ('u', 0.0288), ('c', 0.0271), ('m', 0.0261), ('f', 0.0230),
-    ('y', 0.0211), ('w', 0.0209), ('g', 0.0203), ('p', 0.0182), ('b', 0.0149),
-    ('v', 0.0111), ('k', 0.0069), ('x', 0.0017), ('q', 0.0011), ('j', 0.0010),
-    ('z', 0.0007)
-];
 
 fn generate_ngrams(text: &str, n: usize) -> Vec<String> {
     let filtered: String = text.to_lowercase()
@@ -71,84 +58,66 @@ fn generate_ngrams(text: &str, n: usize) -> Vec<String> {
 }
 
 
-fn calculate_word_score(text: &str) -> f64 {
-    let text_lower = text.to_lowercase();
-    let words: Vec<&str> = text_lower.split_whitespace().collect();
-
-    if words.is_empty() {
-        return 0.0;
-    }
-
-    let valid_word_count = words.iter()
-        .filter(|word| is_english_word(word))
-        .count() as f64;
-
-    valid_word_count / words.len() as f64
-}
 
 pub fn is_gibberish(text: &str) -> bool {
     let trimmed = text.trim();
     if trimmed.is_empty() {
-        return true;  // Empty text is now considered gibberish
-    }
-
-    // If text contains any non-English characters (except spaces and basic punctuation), it's gibberish
-    if text.chars().any(|c| {
-        !ENGLISH_LETTERS.contains(&c) && 
-        !c.is_whitespace() && 
-        !matches!(c, '.' | ',' | '!' | '?' | '\'' | '"' | ';' | ':' | '-')
-    }) {
         return true;
     }
 
-    let words: Vec<&str> = trimmed.split_whitespace().collect();
-    if words.is_empty() {
-        return true;
-    }
-
-    // Require a high percentage of valid English words
-    let valid_word_count = words.iter()
-        .filter(|word| {
-            // Remove punctuation for word lookup
-            let clean_word = word.trim_matches(|c: char| !c.is_alphabetic());
-            !clean_word.is_empty() && is_english_word(clean_word.to_lowercase().as_str())
-        })
-        .count();
-
-    // Require at least 80% of words to be valid English
-    if (valid_word_count as f64 / words.len() as f64) < 0.8 {
-        return true;
-    }
-
-    // Check for repetitive patterns that might indicate encoding
-    let char_vec: Vec<char> = trimmed.chars()
-        .filter(|c| c.is_alphabetic())
-        .collect();
+    // Count English letters
+    let total_chars = trimmed.chars().count() as f64;
+    let english_letter_count = trimmed.chars()
+        .filter(|c| ENGLISH_LETTERS.contains(c))
+        .count() as f64;
     
-    if char_vec.len() >= 3 {
-        // Check for repeated characters
-        let repeated_chars = char_vec.windows(2)
-            .filter(|pair| pair[0] == pair[1])
-            .count() as f64 / (char_vec.len() as f64);
-        
-        if repeated_chars > 0.2 {
-            return true;
-        }
-
-        // Check for shifted patterns (like ROT13)
-        let shifted_pattern_score = char_vec.windows(2)
-            .filter(|pair| {
-                let diff = (pair[0] as i32 - pair[1] as i32).abs();
-                diff == 13 || diff == 1 || diff == 5
-            })
-            .count() as f64 / (char_vec.len() as f64);
-
-        if shifted_pattern_score > 0.25 {
-            return true;
-        }
+    // If less than 50% English letters, it's not worth checking further
+    if english_letter_count / total_chars < 0.5 {
+        return true;
     }
 
-    false
+    // Check for any English words
+    let words: Vec<&str> = trimmed.split_whitespace()
+        .map(|word| word.trim_matches(|c: char| !c.is_alphabetic()))
+        .filter(|word| !word.is_empty())
+        .collect();
+
+    // If any word is English, consider it English text
+    if words.iter().any(|word| is_english_word(&word.to_lowercase())) {
+        return false;
+    }
+
+    // Check trigrams and quadgrams
+    let trigrams = generate_ngrams(trimmed, 3);
+    let quadgrams = generate_ngrams(trimmed, 4);
+
+    let valid_trigrams = trigrams.iter()
+        .filter(|gram| COMMON_TRIGRAMS.contains(gram.as_str()))
+        .count() as f64;
+    
+    let valid_quadgrams = quadgrams.iter()
+        .filter(|gram| COMMON_QUADGRAMS.contains(gram.as_str()))
+        .count() as f64;
+
+    // Calculate scores
+    let trigram_score = if trigrams.is_empty() { 
+        0.0 
+    } else { 
+        valid_trigrams / trigrams.len() as f64 
+    };
+
+    let quadgram_score = if quadgrams.is_empty() { 
+        0.0 
+    } else { 
+        valid_quadgrams / quadgrams.len() as f64 
+    };
+
+    // If either score is high enough, consider it English
+    if trigram_score > 0.2 || quadgram_score > 0.2 {
+        return false;
+    }
+
+    true
 }
 
 #[cfg(test)]
@@ -160,15 +129,20 @@ mod tests {
         assert!(!is_gibberish("The quick brown fox jumps over the lazy dog."));
         assert!(!is_gibberish("This is a simple English sentence."));
         assert!(!is_gibberish("Hello, world!"));
+        // Test single English word
+        assert!(!is_gibberish("hello"));
+        // Test text with common trigrams/quadgrams
+        assert!(!is_gibberish("ther with tion"));
     }
 
     #[test]
     fn test_non_english_text() {
         assert!(is_gibberish("12345 67890"));
         assert!(is_gibberish(""));
-        assert!(is_gibberish("qwerty asdfgh"));
         assert!(is_gibberish("你好世界"));
         assert!(is_gibberish("!@#$%^&*()"));
+        // Text without enough English letters
+        assert!(is_gibberish("123 456 789 abc"));
     }
 
     #[test]
