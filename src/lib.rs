@@ -232,8 +232,8 @@ pub fn is_gibberish(text: &str) -> bool {
         0.20 * word_score
     ) * repetition_penalty;
 
-    // Much stricter threshold
-    combined_score >= 0.45 && word_score > 0.3
+    // Allow technical text with good word structure
+    combined_score >= 0.35 && word_score > 0.25
 }
 
 #[cfg(test)]
