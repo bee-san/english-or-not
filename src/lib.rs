@@ -42,6 +42,13 @@ static ENGLISH_LETTERS: phf::Set<char> = phf_set! {
 };
 
 
+fn clean_text(text: &str) -> String {
+    text.chars()
+        .filter(|c| ENGLISH_LETTERS.contains(c))
+        .collect::<String>()
+        .to_lowercase()
+}
+
 fn generate_ngrams(text: &str, n: usize) -> Vec<String> {
     let filtered: String = text.to_lowercase()
         .chars()
@@ -60,36 +67,32 @@ fn generate_ngrams(text: &str, n: usize) -> Vec<String> {
 
 
 pub fn is_gibberish(text: &str) -> bool {
-    let trimmed = text.trim();
-    if trimmed.is_empty() {
-        return true;
-    }
-
-    // Count English letters
-    let total_chars = trimmed.chars().count() as f64;
-    let english_letter_count = trimmed.chars()
-        .filter(|c| ENGLISH_LETTERS.contains(c))
-        .count() as f64;
+    // Clean the text first
+    let cleaned = clean_text(text);
     
-    // If less than 50% English letters, it's not worth checking further
-    if english_letter_count / total_chars < 0.5 {
+    // Check if empty after cleaning
+    if cleaned.is_empty() {
         return true;
     }
 
-    // Check for any English words
-    let words: Vec<&str> = trimmed.split_whitespace()
-        .map(|word| word.trim_matches(|c: char| !c.is_alphabetic()))
+    // For very short cleaned text, only check if it's an English word
+    if cleaned.len() < 10 {
+        return !is_english_word(&cleaned);
+    }
+
+    // Split into words and check for English words
+    let words: Vec<&str> = cleaned.split_whitespace()
         .filter(|word| !word.is_empty())
         .collect();
 
     // If any word is English, consider it English text
-    if words.iter().any(|word| is_english_word(&word.to_lowercase())) {
+    if words.iter().any(|word| is_english_word(word)) {
         return false;
     }
 
-    // Check trigrams and quadgrams
-    let trigrams = generate_ngrams(trimmed, 3);
-    let quadgrams = generate_ngrams(trimmed, 4);
+    // Only proceed with trigram/quadgram analysis for longer text
+    let trigrams = generate_ngrams(&cleaned, 3);
+    let quadgrams = generate_ngrams(&cleaned, 4);
 
     let valid_trigrams = trigrams.iter()
         .filter(|gram| COMMON_TRIGRAMS.contains(gram.as_str()))
@@ -113,11 +116,7 @@ pub fn is_gibberish(text: &str) -> bool {
     };
 
     // If either score is high enough, consider it English
-    if trigram_score > 0.5 || quadgram_score > 0.5 {
-        return false;
-    }
-
-    true
+    !(trigram_score > 0.5 || quadgram_score > 0.5)
 }
 
 #[cfg(test)]
