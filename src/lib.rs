@@ -71,63 +71,6 @@ fn generate_ngrams(text: &str, n: usize) -> Vec<String> {
         .collect()
 }
 
-fn calculate_letter_frequency_score(text: &str) -> f64 {
-    let mut freq_map: HashMap<char, usize> = HashMap::new();
-    let text_lower = text.to_lowercase();
-    let total_letters: f64 = text_lower.chars()
-        .filter(|c| ENGLISH_LETTERS.contains(c))
-        .map(|c| {
-            *freq_map.entry(c).or_insert(0) += 1;
-            1
-        })
-        .sum::<usize>() as f64;
-
-    if total_letters == 0.0 {
-        return 0.0;
-    }
-
-    // Calculate frequency difference from English
-    let freq_diff: f64 = LETTER_FREQ.iter()
-        .map(|(c, expected_freq)| {
-            let actual_freq = *freq_map.get(c).unwrap_or(&0) as f64 / total_letters;
-            (expected_freq - actual_freq).abs()
-        })
-        .sum::<f64>();
-
-    // Convert to a score (0 to 1, where 1 is perfect match)
-    // Scale the difference to make the scoring more lenient
-    (1.0 - freq_diff * 0.5).max(0.0)
-}
-
-fn calculate_vowel_consonant_ratio(text: &str) -> f64 {
-    let mut vowels = 0;
-    let mut consonants = 0;
-
-    for c in text.to_lowercase().chars() {
-        if VOWELS.contains(&c) {
-            vowels += 1;
-        } else if ENGLISH_LETTERS.contains(&c) {
-            consonants += 1;
-        }
-    }
-
-    if consonants == 0 {
-        return 0.0;
-    }
-
-    // Typical English vowel/consonant ratio is around 0.4-0.6
-    let ratio = vowels as f64 / consonants as f64;
-    let ideal_ratio = 0.5;
-    let diff = (ratio - ideal_ratio).abs();
-    
-    // Convert to a score (0 to 1, where 1 is perfect match)
-    // More lenient scoring for vowel/consonant ratio
-    if diff <= 0.3 {
-        1.0 - (diff / 0.3)
-    } else {
-        0.0
-    }
-}
 
 fn calculate_word_score(text: &str) -> f64 {
     let text_lower = text.to_lowercase();
@@ -147,133 +90,66 @@ fn calculate_word_score(text: &str) -> f64 {
 pub fn is_gibberish(text: &str) -> bool {
     let trimmed = text.trim();
     if trimmed.is_empty() {
-        return false;
+        return true;  // Empty text is now considered gibberish
     }
 
-    // Check for control characters
-    let control_char_count = text.chars().filter(|c| c.is_control()).count();
-    let control_char_ratio = control_char_count as f64 / text.len() as f64;
-    
-    // Mark as gibberish if:
-    // 1. High proportion of control characters (>30%)
-    // 2. Or if there's a significant mix of control and printable characters
-    if control_char_ratio > 0.3 || (control_char_count > 3 && control_char_ratio > 0.15) {
+    // If text contains any non-English characters (except spaces and basic punctuation), it's gibberish
+    if text.chars().any(|c| {
+        !ENGLISH_LETTERS.contains(&c) && 
+        !c.is_whitespace() && 
+        !matches!(c, '.' | ',' | '!' | '?' | '\'' | '"' | ';' | ':' | '-')
+    }) {
         return true;
     }
 
-    // Check for suspicious patterns that indicate encoding
-    let suspicious_chars = text.chars()
-        .filter(|c| c.is_ascii_digit() || *c == '=' || *c == '+' || *c == '/' || *c == '\\')
-        .count() as f64;
-    let suspicious_ratio = suspicious_chars as f64 / text.len() as f64;
-    
-    // If text has high ratio of encoding-like characters (base64, etc)
-    if suspicious_ratio > 0.15 && text.len() > 3 {
+    let words: Vec<&str> = trimmed.split_whitespace().collect();
+    if words.is_empty() {
         return true;
     }
 
-    // Only check for English letter patterns if the text contains some English letters
-    if !text.chars().any(|c| ENGLISH_LETTERS.contains(&c)) {
-        // If no English letters, it's not gibberish (could be numbers, other scripts, etc)
-        return false;
-    }
-
-    // Special handling for very short text (1-2 words)
-    let word_count = trimmed.split_whitespace().count();
-    if word_count <= 2 {
-        // For single character, only check if it's an English letter
-        if word_count == 1 && trimmed.len() == 1 {
-            // Single characters are not considered valid English words
-            return false;
-        }
-        let word_score = calculate_word_score(trimmed);
-        let letter_freq_score = calculate_letter_frequency_score(trimmed);
-        // More lenient handling for short text
-        return word_score > 0.3 || letter_freq_score > 0.5;
-    }
-
-    let bigrams = generate_ngrams(trimmed, 2);
-    let trigrams = generate_ngrams(trimmed, 3);
-    let quadgrams = generate_ngrams(trimmed, 4);
-
-    if bigrams.is_empty() || trigrams.is_empty() {
-        return false;
-    }
-
-    // Check for repeated character patterns more strictly
-    let char_vec: Vec<char> = trimmed.chars().collect();
-    let repeated_chars = char_vec.windows(2)
-        .filter(|pair| pair[0] == pair[1])
-        .count() as f64 / (char_vec.len() as f64);
-    
-    // More strict pattern detection
-    if repeated_chars > 0.2 {
-        return true;
-    }
-
-    // Detect shifted text patterns (like ROT13 or similar) more strictly
-    let shifted_pattern_score = char_vec.windows(2)
-        .filter(|pair| {
-            if !pair[0].is_ascii_alphabetic() || !pair[1].is_ascii_alphabetic() {
-                return false;
-            }
-            let diff = (pair[0] as i32 - pair[1] as i32).abs();
-            // Common shifts in encoded text
-            diff == 5 || diff == 13 || diff == 1
+    // Require a high percentage of valid English words
+    let valid_word_count = words.iter()
+        .filter(|word| {
+            // Remove punctuation for word lookup
+            let clean_word = word.trim_matches(|c| !c.is_alphabetic());
+            !clean_word.is_empty() && is_english_word(clean_word.to_lowercase().as_str())
         })
-        .count() as f64 / (char_vec.len() as f64);
+        .count();
 
-    if shifted_pattern_score > 0.25 {
+    // Require at least 80% of words to be valid English
+    if (valid_word_count as f64 / words.len() as f64) < 0.8 {
         return true;
     }
 
-    // Calculate n-gram scores with stricter thresholds
-    let bigram_score = bigrams.iter()
-        .filter(|gram| COMMON_BIGRAMS.contains(gram.as_str()))
-        .count() as f64 / bigrams.len() as f64;
+    // Check for repetitive patterns that might indicate encoding
+    let char_vec: Vec<char> = trimmed.chars()
+        .filter(|c| c.is_alphabetic())
+        .collect();
+    
+    if char_vec.len() >= 3 {
+        // Check for repeated characters
+        let repeated_chars = char_vec.windows(2)
+            .filter(|pair| pair[0] == pair[1])
+            .count() as f64 / (char_vec.len() as f64);
+        
+        if repeated_chars > 0.2 {
+            return true;
+        }
 
-    let trigram_score = trigrams.iter()
-        .filter(|gram| COMMON_TRIGRAMS.contains(gram.as_str()))
-        .count() as f64 / trigrams.len() as f64;
+        // Check for shifted patterns (like ROT13)
+        let shifted_pattern_score = char_vec.windows(2)
+            .filter(|pair| {
+                let diff = (pair[0] as i32 - pair[1] as i32).abs();
+                diff == 13 || diff == 1 || diff == 5
+            })
+            .count() as f64 / (char_vec.len() as f64);
 
-    let quadgram_score = if !quadgrams.is_empty() {
-        quadgrams.iter()
-            .filter(|gram| COMMON_QUADGRAMS.contains(gram.as_str()))
-            .count() as f64 / quadgrams.len() as f64
-    } else {
-        0.0
-    };
-
-    // Penalize text with high repetition or shift patterns
-    if repeated_chars > 0.3 || shifted_pattern_score > 0.3 {
-        return false;
+        if shifted_pattern_score > 0.25 {
+            return true;
+        }
     }
 
-    // Calculate additional scores
-    let letter_freq_score = calculate_letter_frequency_score(trimmed);
-    let vowel_consonant_score = calculate_vowel_consonant_ratio(trimmed);
-    let word_score = calculate_word_score(trimmed);
-
-    // Check for repetitive patterns
-    let unique_words = trimmed.split_whitespace().collect::<std::collections::HashSet<_>>();
-    let repetition_penalty = if (unique_words.len() as f64) / (word_count as f64) < 0.3 {
-        0.5 // Significant penalty for highly repetitive text
-    } else {
-        1.0
-    };
-
-    // Weighted combination of all scores with stricter thresholds
-    let combined_score = (
-        0.20 * bigram_score +
-        0.25 * trigram_score +
-        0.25 * quadgram_score +
-        0.15 * letter_freq_score +
-        0.15 * vowel_consonant_score +
-        0.20 * word_score
-    ) * repetition_penalty;
-
-    // Allow technical text with good word structure
-    combined_score >= 0.35 && word_score > 0.25
+    false
 }
 
 #[cfg(test)]
