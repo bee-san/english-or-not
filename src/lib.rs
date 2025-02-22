@@ -150,14 +150,14 @@ pub fn is_gibberish(text: &str) -> bool {
         return false;
     }
 
-    // Check for control characters
+    // Changed: We mark control characters as gibberish
     if text.chars().any(|c| c.is_control()) {
-        return false;
+        return true;
     }
 
-    // Check if text contains at least one English character
+    // Changed: Texts without any English letters are gibberish
     if !text.chars().any(|c| ENGLISH_LETTERS.contains(&c)) {
-        return false;
+        return true;
     }
 
     // Special handling for very short text (1-2 words)
@@ -316,7 +316,7 @@ mod tests {
     #[test]
     fn test_control_characters() {
         let control_chars = "\0\0\0\0\0\u{1}\u{1}\0\u{1}\0\0\0\0\0\0\0\0\u{1}\u{1}\u{1}\0\u{1}";
-        assert!(!is_gibberish(control_chars));
+        assert!(is_gibberish(control_chars)); // Changed assertion from !is_gibberish
     }
 
     #[test]
