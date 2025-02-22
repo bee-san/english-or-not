@@ -150,6 +150,11 @@ pub fn is_gibberish(text: &str) -> bool {
         return false;
     }
 
+    // Check for control characters
+    if text.chars().any(|c| c.is_control()) {
+        return false;
+    }
+
     // Special handling for very short text (1-2 words)
     let word_count = trimmed.split_whitespace().count();
     if word_count <= 2 {
@@ -301,6 +306,12 @@ mod tests {
         assert!(is_gibberish("The HTTP protocol uses TCP/IP"));
         assert!(is_gibberish("README.md contains documentation"));
         assert!(is_gibberish("Git repository needs to be initialized"));
+    }
+
+    #[test]
+    fn test_control_characters() {
+        let control_chars = "\0\0\0\0\0\u{1}\u{1}\0\u{1}\0\0\0\0\0\0\0\0\u{1}\u{1}\u{1}\0\u{1}";
+        assert!(!is_gibberish(control_chars));
     }
 
     #[test]
