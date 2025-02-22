@@ -145,7 +145,7 @@ fn calculate_word_score(text: &str) -> f64 {
     valid_word_count / words.len() as f64
 }
 
-pub fn is_english(text: &str) -> bool {
+pub fn is_gibberish(text: &str) -> bool {
     let trimmed = text.trim();
     if trimmed.is_empty() {
         return false;
@@ -223,54 +223,54 @@ mod tests {
 
     #[test]
     fn test_english_text() {
-        assert!(is_english("The quick brown fox jumps over the lazy dog"));
-        assert!(is_english("This is a simple English sentence"));
-        assert!(is_english("Programming in Rust is fun and productive"));
-        assert!(is_english("The weather is beautiful today"));
+        assert!(is_gibberish("The quick brown fox jumps over the lazy dog"));
+        assert!(is_gibberish("This is a simple English sentence"));
+        assert!(is_gibberish("Programming in Rust is fun and productive"));
+        assert!(is_gibberish("The weather is beautiful today"));
     }
 
     #[test]
     fn test_non_english_text() {
-        assert!(!is_english("xkcd vwpq mntb zzzz"));
-        assert!(!is_english("12345 67890"));
-        assert!(!is_english(""));
-        assert!(!is_english("qwerty asdfgh zxcvbn"));
-        assert!(!is_english("zzzzz xxxxx qqqqq"));
+        assert!(!is_gibberish("xkcd vwpq mntb zzzz"));
+        assert!(!is_gibberish("12345 67890"));
+        assert!(!is_gibberish(""));
+        assert!(!is_gibberish("qwerty asdfgh zxcvbn"));
+        assert!(!is_gibberish("zzzzz xxxxx qqqqq"));
     }
 
     #[test]
     fn test_mixed_text() {
-        assert!(is_english("Hello World"));
-        assert!(!is_english("Hello_World")); // Underscores are no longer valid
-        assert!(!is_english("H3ll0 W0rld!!!111"));
-        assert!(is_english("I have apples and oranges"));
-        assert!(is_english("Send email to contact@example.com"));
+        assert!(is_gibberish("Hello World"));
+        assert!(!is_gibberish("Hello_World")); // Underscores are no longer valid
+        assert!(!is_gibberish("H3ll0 W0rld!!!111"));
+        assert!(is_gibberish("I have apples and oranges"));
+        assert!(is_gibberish("Send email to contact@example.com"));
     }
 
     #[test]
     fn test_edge_cases() {
-        assert!(!is_english("aaaaaaaaaaaaaaa")); // Repetitive letters
-        assert!(!is_english("thththththththth")); // Repetitive common bigrams
-        assert!(!is_english("thethethethethe")); // Repetitive common words
-        assert!(!is_english("    ")); // Only whitespace
-        assert!(!is_english("!@#$%^&*()")); // Only symbols
+        assert!(!is_gibberish("aaaaaaaaaaaaaaa")); // Repetitive letters
+        assert!(!is_gibberish("thththththththth")); // Repetitive common bigrams
+        assert!(!is_gibberish("thethethethethe")); // Repetitive common words
+        assert!(!is_gibberish("    ")); // Only whitespace
+        assert!(!is_gibberish("!@#$%^&*()")); // Only symbols
     }
 
     #[test]
     fn test_short_text() {
-        assert!(is_english("The cat"));
-        assert!(is_english("I am"));
-        assert!(!is_english("xy"));
-        assert!(!is_english("a")); // Single letters are not considered valid words
-        assert!(is_english("Hello"));
-        assert!(is_english("it")); // Common two-letter word
+        assert!(is_gibberish("The cat"));
+        assert!(is_gibberish("I am"));
+        assert!(!is_gibberish("xy"));
+        assert!(!is_gibberish("a")); // Single letters are not considered valid words
+        assert!(is_gibberish("Hello"));
+        assert!(is_gibberish("it")); // Common two-letter word
     }
 
     #[test]
     fn test_technical_text() {
-        assert!(is_english("The HTTP protocol uses TCP/IP"));
-        assert!(is_english("README.md contains documentation"));
-        assert!(is_english("Git repository needs to be initialized"));
+        assert!(is_gibberish("The HTTP protocol uses TCP/IP"));
+        assert!(is_gibberish("README.md contains documentation"));
+        assert!(is_gibberish("Git repository needs to be initialized"));
     }
 
     #[test]
