@@ -1,6 +1,5 @@
 use phf::phf_set;
 use std::collections::HashMap;
-use std::collections::HashSet;
 
 mod dictionary;
 
