@@ -1,6 +1,7 @@
 import random
 import string
-import openrouter
+import requests
+import os
 
 # Constants
 NUM_SENTENCES = 1000
@@ -9,13 +10,23 @@ SLANG_PROMPT = "Generate a casual English sentence using modern slang. Keep it s
 
 def generate_english_sentences():
     sentences = []
+    headers = {
+        "Authorization": f"Bearer {os.getenv('openrouter')}",
+        "Content-Type": "application/json"
+    }
+    
     for _ in range(NUM_SENTENCES):
-        response = openrouter.Completion.create(
-            model="huggingfaceh4/zephyr-7b-beta",  # Changed to Zephyr model
-            prompt=SLANG_PROMPT,
-            max_tokens=30
+        data = {
+            "model": "huggingfaceh4/zephyr-7b-beta",
+            "messages": [{"role": "user", "content": SLANG_PROMPT}]
+        }
+        response = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers=headers,
+            json=data
         )
-        sentences.append(response.choices[0].text.strip())
+        response.raise_for_status()
+        sentences.append(response.json()['choices'][0]['message']['content'].strip())
     return sentences
 
 def generate_gibberish():
