@@ -172,7 +172,22 @@ pub fn is_gibberish(text: &str) -> bool {
         return false;
     }
 
-    // Calculate n-gram scores
+    // Detect repeated character patterns
+    let char_vec: Vec<char> = trimmed.chars().collect();
+    let repeated_chars = char_vec.windows(2)
+        .filter(|pair| pair[0] == pair[1])
+        .count() as f64 / (char_vec.len() as f64);
+    
+    // Detect shifted text patterns (like ROT13 or similar)
+    let shifted_pattern_score = char_vec.windows(2)
+        .filter(|pair| {
+            let diff = (pair[0] as i32 - pair[1] as i32).abs();
+            // Common shifts in encoded text
+            diff == 5 || diff == 13 || diff == 1
+        })
+        .count() as f64 / (char_vec.len() as f64);
+
+    // Calculate n-gram scores with stricter thresholds
     let bigram_score = bigrams.iter()
         .filter(|gram| COMMON_BIGRAMS.contains(gram.as_str()))
         .count() as f64 / bigrams.len() as f64;
@@ -189,6 +204,11 @@ pub fn is_gibberish(text: &str) -> bool {
         0.0
     };
 
+    // Penalize text with high repetition or shift patterns
+    if repeated_chars > 0.3 || shifted_pattern_score > 0.3 {
+        return false;
+    }
+
     // Calculate additional scores
     let letter_freq_score = calculate_letter_frequency_score(trimmed);
     let vowel_consonant_score = calculate_vowel_consonant_ratio(trimmed);
@@ -202,18 +222,18 @@ pub fn is_gibberish(text: &str) -> bool {
         1.0
     };
 
-    // Weighted combination of all scores
+    // Weighted combination of all scores with stricter thresholds
     let combined_score = (
-        0.15 * bigram_score +
-        0.20 * trigram_score +
+        0.20 * bigram_score +
+        0.25 * trigram_score +
         0.25 * quadgram_score +
         0.15 * letter_freq_score +
-        0.10 * vowel_consonant_score +
-        0.15 * word_score
+        0.15 * vowel_consonant_score +
+        0.20 * word_score
     ) * repetition_penalty;
 
-    // Threshold is now more strict due to better scoring
-    combined_score >= 0.20
+    // Much stricter threshold
+    combined_score >= 0.45 && word_score > 0.3
 }
 
 #[cfg(test)]
@@ -253,6 +273,17 @@ mod tests {
         assert!(!is_gibberish("thethethethethe")); // Repetitive common words
         assert!(!is_gibberish("    ")); // Only whitespace
         assert!(!is_gibberish("!@#$%^&*()")); // Only symbols
+    }
+
+    #[test]
+    fn test_encoded_patterns() {
+        assert!(!is_gibberish("gzzgiq")); // Encoded/shifted text
+        assert!(!is_gibberish("cvvcem")); // Encoded/shifted text
+        assert!(!is_gibberish("Vszzc! hvwg wg zcbu hslh?")); // ROT-style encoding
+        assert!(!is_gibberish("buubdl")); // Encoded text
+        assert!(!is_gibberish("vszzc hvwg wg zcbu hslh")); // Encoded text
+        assert!(!is_gibberish("agoykxtwpS,ceh fmzibuqo lauj nrdv   ")); // Random gibberish
+        assert!(!is_gibberish("=EjLw4CO2EjLykTM")); // Base64-like pattern
     }
 
     #[test]
