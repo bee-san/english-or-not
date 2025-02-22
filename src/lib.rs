@@ -1,5 +1,4 @@
 use phf::phf_set;
-use std::collections::HashMap;
 
 mod dictionary;
 
@@ -111,7 +110,7 @@ pub fn is_gibberish(text: &str) -> bool {
     let valid_word_count = words.iter()
         .filter(|word| {
             // Remove punctuation for word lookup
-            let clean_word = word.trim_matches(|c| !c.is_alphabetic());
+            let clean_word = word.trim_matches(|c: char| !c.is_alphabetic());
             !clean_word.is_empty() && is_english_word(clean_word.to_lowercase().as_str())
         })
         .count();
