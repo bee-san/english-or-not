@@ -4,6 +4,7 @@ import requests
 import os
 import sys
 import time
+import phf
 
 # Constants
 NUM_SENTENCES = 1000
@@ -75,10 +76,24 @@ def generate_gibberish():
     return gibberish
 
 
+def generate_phf_map(words):
+    """Generate a perfect hash function map from the given words"""
+    phf_map = phf.PHF(words)
+    return phf_map
+
 def save_to_file(filename, data):
     with open(filename, "w") as f:
         for item in data:
             f.write(f"{item}\n")
+
+def save_phf_map(filename, phf_map):
+    """Save the PHF map to a Rust source file"""
+    with open(filename, "w") as f:
+        f.write("use phf::phf_map;\n\n")
+        f.write("pub static WORD_MAP: phf::Map<&'static str, ()> = phf_map! {\n")
+        for word in phf_map.keys():
+            f.write(f'    "{word}" => (),\n')
+        f.write("};\n")
 
 
 def main():
@@ -89,6 +104,12 @@ def main():
 
     save_to_file("english_sentences.txt", english_sentences)
     save_to_file("gibberish_sentences.txt", gibberish_sentences)
+    
+    # Generate PHF map from English sentences
+    print("Generating PHF map...")
+    phf_map = generate_phf_map(english_sentences)
+    save_phf_map("src/word_map.rs", phf_map)
+    
     print("Data generation complete!")
 
 
