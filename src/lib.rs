@@ -44,9 +44,14 @@ static ENGLISH_LETTERS: phf::Set<char> = phf_set! {
 
 fn clean_text(text: &str) -> String {
     text.chars()
-        .filter(|c| ENGLISH_LETTERS.contains(c))
-        .collect::<String>()
-        .to_lowercase()
+        .map(|c| if ENGLISH_LETTERS.contains(&c) {
+            c.to_ascii_lowercase()
+        } else if c.is_whitespace() {
+            ' '
+        } else {
+            ' '
+        })
+        .collect()
 }
 
 fn generate_ngrams(text: &str, n: usize) -> Vec<String> {
