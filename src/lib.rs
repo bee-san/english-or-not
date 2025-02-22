@@ -161,9 +161,10 @@ pub fn is_gibberish(text: &str) -> bool {
         return true;
     }
 
-    // Changed: Texts without any English letters are gibberish
+    // Only check for English letter patterns if the text contains some English letters
     if !text.chars().any(|c| ENGLISH_LETTERS.contains(&c)) {
-        return true;
+        // If no English letters, it's not gibberish (could be numbers, other scripts, etc)
+        return false;
     }
 
     // Special handling for very short text (1-2 words)
