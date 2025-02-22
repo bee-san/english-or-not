@@ -150,12 +150,14 @@ pub fn is_gibberish(text: &str) -> bool {
         return false;
     }
 
-    // Only mark text as gibberish if it contains a high proportion of control characters
-    let control_char_ratio = text.chars()
-        .filter(|c| c.is_control())
-        .count() as f64 / text.len() as f64;
+    // Check for control characters
+    let control_char_count = text.chars().filter(|c| c.is_control()).count();
+    let control_char_ratio = control_char_count as f64 / text.len() as f64;
     
-    if control_char_ratio > 0.8 {
+    // Mark as gibberish if:
+    // 1. High proportion of control characters (>30%)
+    // 2. Or if there's a significant mix of control and printable characters
+    if control_char_ratio > 0.3 || (control_char_count > 3 && control_char_ratio > 0.15) {
         return true;
     }
 
