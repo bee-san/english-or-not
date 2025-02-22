@@ -97,15 +97,15 @@ pub fn is_gibberish(text: &str) -> bool {
         .collect();
     println!("Words found: {:?}", words);
 
-    // Check each word
-    for word in words.iter() {
-        if is_english_word(word) {
+    let has_english_word = words.iter().any(|word| {
+        let is_english = is_english_word(word);
+        if is_english {
             println!("Found English word: '{}'", word);
-            return false;
         }
-    }
+        is_english
+    });
 
-    // Only proceed with trigram/quadgram analysis for longer text
+    // Proceed with trigram/quadgram analysis
     let trigrams = generate_ngrams(&cleaned, 3);
     let quadgrams = generate_ngrams(&cleaned, 4);
 
@@ -138,9 +138,13 @@ pub fn is_gibberish(text: &str) -> bool {
         score
     };
 
-    // If either score is high enough, consider it English
-    let result = !(trigram_score > 0.5 || quadgram_score > 0.5);
-    println!("Final decision: text is {}", if result { "gibberish" } else { "English" });
+    // Text must have both an English word AND good n-gram scores to be considered English
+    let ngram_score_good = trigram_score > 0.5 || quadgram_score > 0.5;
+    let result = !(has_english_word && ngram_score_good);
+    println!("Final decision: text is {} (has_english_word={}, ngram_score_good={})", 
+             if result { "gibberish" } else { "English" },
+             has_english_word,
+             ngram_score_good);
     result
 }
 
