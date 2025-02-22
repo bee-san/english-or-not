@@ -39,7 +39,7 @@ def generate_english_sentences():
     for _ in range(NUM_SENTENCES):
         try:
             data = {
-                "model": "huggingfaceh4/zephyr-7b-beta",
+                "model": "openai/gpt-3.5-turbo",
                 "messages": [{"role": "user", "content": SLANG_PROMPT}],
             }
             response = requests.post(
