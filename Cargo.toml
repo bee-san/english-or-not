@@ -1,5 +1,5 @@
 [package]
-name = "english-or-not"
+name = "gibberish-or-not"
 version = "0.1.0"
 edition = "2021"
 
