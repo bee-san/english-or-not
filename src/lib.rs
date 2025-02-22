@@ -5,11 +5,11 @@ use std::collections::HashSet;
 mod dictionary;
 
 fn is_english_word(word: &str) -> bool {
-    dictionary::is_english_word(word)
+    dictionary::ENGLISH_WORDS.contains(word)
 }
 
 // The dictionary module provides a perfect hash table implementation
-// using a match statement, which is generated at compile time
+// using the phf crate, which is generated at compile time
 // for optimal performance and memory efficiency
 
 

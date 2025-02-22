@@ -10,8 +10,9 @@ fn main() -> io::Result<()> {
     let mut output = File::create(output_file)?;
     
     // Write header
-    writeln!(output, "pub fn is_english_word(word: &str) -> bool {{")?;
-    writeln!(output, "    match word {{")?;
+    writeln!(output, "use phf::phf_set;")?;
+    writeln!(output, "")?;
+    writeln!(output, "pub static ENGLISH_WORDS: phf::Set<&'static str> = phf_set! {{")?;
     
     // Try to process input file
     if let Ok(input) = File::open(input_file) {
@@ -20,7 +21,7 @@ fn main() -> io::Result<()> {
         for line in reader.lines() {
             let word = line?.trim().to_string();
             if !word.is_empty() {
-                writeln!(output, "        \"{}\" => true,", word)?;
+                writeln!(output, "    \"{}\",", word)?;
             }
         }
     } else {
@@ -28,9 +29,7 @@ fn main() -> io::Result<()> {
     }
     
     // Write footer
-    writeln!(output, "        _ => false,")?;
-    writeln!(output, "    }}")?;
-    writeln!(output, "}}")?;
+    writeln!(output, "}};")?;
     
     println!("Dictionary generated successfully at {}", output_file);
     Ok(())
