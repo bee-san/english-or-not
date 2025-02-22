@@ -20,7 +20,7 @@ fn main() -> io::Result<()> {
         
         for line in reader.lines() {
             let word = line?.trim().to_string();
-            if !word.is_empty() {
+            if word.len() >= 4 {
                 writeln!(output, "    \"{}\",", word)?;
             }
         }
