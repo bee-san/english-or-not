@@ -2,7 +2,7 @@
 name = "gibberish-or-not"
 version = "0.1.0"
 edition = "2021"
-license='mit'
+license='MIT'
 description='Figure out if text is gibberish or not'
 
 [dependencies]
