@@ -161,6 +161,17 @@ pub fn is_gibberish(text: &str) -> bool {
         return true;
     }
 
+    // Check for suspicious patterns that indicate encoding
+    let suspicious_chars = text.chars()
+        .filter(|c| c.is_ascii_digit() || *c == '=' || *c == '+' || *c == '/' || *c == '\\')
+        .count() as f64;
+    let suspicious_ratio = suspicious_chars as f64 / text.len() as f64;
+    
+    // If text has high ratio of encoding-like characters (base64, etc)
+    if suspicious_ratio > 0.15 && text.len() > 3 {
+        return true;
+    }
+
     // Only check for English letter patterns if the text contains some English letters
     if !text.chars().any(|c| ENGLISH_LETTERS.contains(&c)) {
         // If no English letters, it's not gibberish (could be numbers, other scripts, etc)
@@ -189,20 +200,32 @@ pub fn is_gibberish(text: &str) -> bool {
         return false;
     }
 
-    // Detect repeated character patterns
+    // Check for repeated character patterns more strictly
     let char_vec: Vec<char> = trimmed.chars().collect();
     let repeated_chars = char_vec.windows(2)
         .filter(|pair| pair[0] == pair[1])
         .count() as f64 / (char_vec.len() as f64);
     
-    // Detect shifted text patterns (like ROT13 or similar)
+    // More strict pattern detection
+    if repeated_chars > 0.2 {
+        return true;
+    }
+
+    // Detect shifted text patterns (like ROT13 or similar) more strictly
     let shifted_pattern_score = char_vec.windows(2)
         .filter(|pair| {
+            if !pair[0].is_ascii_alphabetic() || !pair[1].is_ascii_alphabetic() {
+                return false;
+            }
             let diff = (pair[0] as i32 - pair[1] as i32).abs();
             // Common shifts in encoded text
             diff == 5 || diff == 13 || diff == 1
         })
         .count() as f64 / (char_vec.len() as f64);
+
+    if shifted_pattern_score > 0.25 {
+        return true;
+    }
 
     // Calculate n-gram scores with stricter thresholds
     let bigram_score = bigrams.iter()
@@ -294,13 +317,15 @@ mod tests {
 
     #[test]
     fn test_encoded_patterns() {
-        assert!(!is_gibberish("gzzgiq")); // Encoded/shifted text
-        assert!(!is_gibberish("cvvcem")); // Encoded/shifted text
-        assert!(!is_gibberish("Vszzc! hvwg wg zcbu hslh?")); // ROT-style encoding
-        assert!(!is_gibberish("buubdl")); // Encoded text
-        assert!(!is_gibberish("vszzc hvwg wg zcbu hslh")); // Encoded text
-        assert!(!is_gibberish("agoykxtwpS,ceh fmzibuqo lauj nrdv   ")); // Random gibberish
-        assert!(!is_gibberish("=EjLw4CO2EjLykTM")); // Base64-like pattern
+        assert!(is_gibberish("MOTCk4ywLLjjEE2=")); // Base64-like gibberish
+        assert!(is_gibberish("4\u{19}-Fc<@w7\\MF\u{4}")); // Random gibberish with control chars
+        assert!(is_gibberish("Vszzc! hvwg wg zcbu hslh?")); // ROT-style encoding
+        assert!(is_gibberish("buubdl")); // Encoded text
+        assert!(is_gibberish("gzzgiq")); 
+        assert!(is_gibberish("cvvcem")); 
+        assert!(is_gibberish("vszzc hvwg wg zcbu hslh")); 
+        assert!(is_gibberish("agoykxtwpS,ceh fmzibuqo lauj nrdv   ")); 
+        assert!(is_gibberish("=EjLw4CO2EjLykTM")); 
     }
 
     #[test]
