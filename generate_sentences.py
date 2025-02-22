@@ -11,7 +11,7 @@ def generate_english_sentences():
     sentences = []
     for _ in range(NUM_SENTENCES):
         response = openrouter.Completion.create(
-            model="gpt-3.5-turbo",
+            model="huggingfaceh4/zephyr-7b-beta",  # Changed to Zephyr model
             prompt=SLANG_PROMPT,
             max_tokens=30
         )
