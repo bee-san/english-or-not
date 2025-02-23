@@ -5,6 +5,19 @@ edition = "2021"
 license='MIT'
 description='Figure out if text is gibberish or not'
 
+[profile.dev]
+opt-level = 1  # Basic optimizations for faster compile & test cycles
+split-debuginfo = "unpacked"  # Better for Linux performance
+
+[profile.release]
+opt-level = 3
+lto = "thin"  # ThinLTO for faster release builds
+codegen-units = 1  # Better optimizations but still reasonable build time
+
+[profile.test]
+opt-level = 1  # Faster test compilation
+inherits = "dev"
+
 [dependencies]
 phf = { version = "0.11", features = ["macros"] }
 once_cell = "1.19"
