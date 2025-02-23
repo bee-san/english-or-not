@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "gibberish-or-not"
-version = "0.7.0"
+version = "1.0.0"
 dependencies = [
  "lazy_static",
  "once_cell",
