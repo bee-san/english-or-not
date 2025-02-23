@@ -397,11 +397,27 @@ mod tests {
     }
 
     #[test]
-    fn test_common_passwords() {
+    fn test_password_qwerty() {
         assert!(!is_gibberish("qwerty"));
+    }
+
+    #[test]
+    fn test_password_abc123() {
         assert!(!is_gibberish("abc123"));
+    }
+
+    #[test]
+    fn test_password_password1() {
         assert!(!is_gibberish("password1"));
+    }
+
+    #[test]
+    fn test_password_iloveyou() {
         assert!(!is_gibberish("iloveyou"));
+    }
+
+    #[test]
+    fn test_password_numbers() {
         assert!(!is_gibberish("11111111"));
     }
 }
