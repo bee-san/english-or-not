@@ -1,6 +1,5 @@
 use std::fs::File;
 use std::io::{self, BufRead, Write};
-use std::path::Path;
 
 fn main() -> io::Result<()> {
     let input_file = "words_alpha.txt";

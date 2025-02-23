@@ -26,14 +26,6 @@ static COMMON_TRIGRAMS: phf::Set<&'static str> = phf_set! {
     "ica", "ist", "ear", "ain", "one", "our", "iti", "rat", "ell", "ant"
 };
 
-static COMMON_BIGRAMS: phf::Set<&'static str> = phf_set! {
-    "th", "he", "in", "er", "an", "re", "on", "at", "en", "nd",
-    "ti", "es", "or", "te", "of", "ed", "is", "it", "al", "ar",
-    "st", "to", "nt", "ng", "se", "ha", "as", "ou", "io", "le",
-    "ve", "co", "me", "de", "hi", "ri", "ro", "ic", "ne", "ea",
-    "ra", "ce", "li", "ch", "ll", "be", "ma", "si", "om", "ur"
-};
-
 static ENGLISH_LETTERS: phf::Set<char> = phf_set! {
     'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
     'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
