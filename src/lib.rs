@@ -10,7 +10,18 @@ fn is_english_word(word: &str) -> bool {
 // using the phf crate, which is generated at compile time
 // for optimal performance and memory efficiency
 
-
+/// Checks if the given text is gibberish based on English word presence
+/// and n-gram analysis scores. 
+/// 
+/// # Algorithm Steps
+/// 
+/// 1. Clean and normalize the input text
+/// 2. Short text (len < 10) - single word check
+/// 3. Split into words and count English words:
+///    - 2+ English words → considered valid
+///    - 1 English word → check n-gram scores
+///    - 0 English words → more lenient n-gram check
+/// 4. Use different n-gram thresholds depending on case
 
 static COMMON_QUADGRAMS: phf::Set<&'static str> = phf_set! {
     "tion", "atio", "that", "ther", "with", "ment", "ions", "this", 
