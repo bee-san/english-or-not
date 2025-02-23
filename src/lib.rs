@@ -285,4 +285,127 @@ mod tests {
     fn test_repeated_word() {
         assert!(!is_gibberish("buffalo buffalo buffalo"));
     }
+
+    // URLs and email addresses
+    #[test]
+    fn test_url() {
+        assert!(!is_gibberish("Visit https://www.example.com for more info"));
+    }
+
+    #[test]
+    fn test_email_address() {
+        assert!(!is_gibberish("Contact us at support@example.com"));
+    }
+
+    #[test]
+    fn test_url_only() {
+        assert!(is_gibberish("https://aaa.bbb.ccc/ddd"));
+    }
+
+    // Code-like text
+    #[test]
+    fn test_variable_names() {
+        assert!(!is_gibberish("const myVariable = someValue"));
+    }
+
+    #[test]
+    fn test_code_snippet() {
+        assert!(is_gibberish("println!({});"));
+    }
+
+    // Mixed language and special cases
+    #[test]
+    fn test_hashtags() {
+        assert!(!is_gibberish("Great party! #awesome #fun #weekend"));
+    }
+
+    #[test]
+    fn test_emoji_text() {
+        assert!(!is_gibberish("Having fun at the beach 🏖️ with friends 👥"));
+    }
+
+    #[test]
+    fn test_mixed_languages() {
+        assert!(!is_gibberish("The sushi 寿司 was delicious"));
+    }
+
+    // Technical content
+    #[test]
+    fn test_scientific_notation() {
+        assert!(!is_gibberish("The speed of light is 3.0 x 10^8 meters per second"));
+    }
+
+    #[test]
+    fn test_chemical_formula() {
+        assert!(!is_gibberish("Water H2O and Carbon Dioxide CO2 are molecules"));
+    }
+
+    #[test]
+    fn test_mathematical_expression() {
+        assert!(!is_gibberish("Let x = 2y + 3z where y and z are variables"));
+    }
+
+    // Creative text formats
+    #[test]
+    fn test_ascii_art() {
+        assert!(is_gibberish("|-o-|"));
+    }
+
+    #[test]
+    fn test_leetspeak() {
+        assert!(!is_gibberish("l33t h4x0r"));
+    }
+
+    #[test]
+    fn test_repeated_punctuation() {
+        assert!(!is_gibberish("Wow!!! This is amazing!!!"));
+    }
+
+    // Edge cases with numbers and symbols
+    #[test]
+    fn test_phone_number() {
+        assert!(!is_gibberish("Call me at 123-456-7890"));
+    }
+
+    #[test]
+    fn test_serial_number() {
+        assert!(is_gibberish("XJ5K-4M2P-QW3N"));
+    }
+
+    #[test]
+    fn test_credit_card() {
+        assert!(is_gibberish("4532 7153 5678 9012"));
+    }
+
+    // Formatting edge cases
+    #[test]
+    fn test_extra_spaces() {
+        assert!(!is_gibberish("This    has    many    spaces"));
+    }
+
+    #[test]
+    fn test_newlines() {
+        assert!(!is_gibberish("This has\nmultiple\nlines"));
+    }
+
+    #[test]
+    fn test_tabs() {
+        assert!(!is_gibberish("Column1\tColumn2\tColumn3"));
+    }
+
+    // Common internet text
+    #[test]
+    fn test_file_path() {
+        assert!(!is_gibberish("Open C:\\Program Files\\App\\config.txt"));
+    }
+
+    #[test]
+    fn test_html_tags() {
+        assert!(is_gibberish("<div class=\"container\">"));
+    }
+
+    #[test]
+    fn test_json_data() {
+        assert!(is_gibberish("{\"key\": \"value\"}"));
+    }
 }
