@@ -384,4 +384,9 @@ mod tests {
     fn test_json_data() {
         assert!(!is_gibberish("{\"key\": \"value\"}"));
     }
+
+    #[test]
+    fn test_base64_description() {
+        assert!(!is_gibberish("Multiple base64 encodings"));
+    }
 }
