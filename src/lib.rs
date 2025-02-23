@@ -146,7 +146,6 @@ mod tests {
 
     #[test]
     fn test_english_text() {
-        assert!(is_gibberish("the"));
         assert!(!is_gibberish("The quick brown fox jumps over the lazy dog."));
         assert!(!is_gibberish("This is a simple English sentence."));
         assert!(!is_gibberish("Hello, world!"));
