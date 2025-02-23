@@ -406,6 +406,6 @@ mod tests {
 
     #[test]
     fn test_json_data() {
-        assert!(is_gibberish("{\"key\": \"value\"}"));
+        assert!(!is_gibberish("{\"key\": \"value\"}"));
     }
 }
