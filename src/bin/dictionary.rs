@@ -19,7 +19,7 @@ fn main() -> io::Result<()> {
         
         for line in reader.lines() {
             let word = line?.trim().to_string();
-            if word.len() > 3 {
+            if word.len() > 2 {
                 writeln!(output, "    \"{}\",", word)?;
             }
         }
