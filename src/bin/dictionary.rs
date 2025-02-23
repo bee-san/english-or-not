@@ -12,23 +12,29 @@ fn main() -> io::Result<()> {
         std::process::exit(1);
     }
 
-    let input_path = &args[1];
+    let input_path = Path::new(&args[1]);
     let output_path = &args[2];
     let mut seen_words = HashSet::new();
     
     // Process either a single file or directory
-    let path = Path::new(input_path);
-    if path.is_dir() {
-        for entry in std::fs::read_dir(path)? {
+    if input_path.is_dir() {
+        for entry in std::fs::read_dir(input_path)? {
             let entry = entry?;
             let path = entry.path();
-            if path.is_file() {
+            if path.is_file() && !path.file_name().unwrap().to_string_lossy().starts_with('.') {
+                println!("Processing file: {}", path.display());
                 process_file(&path, &mut seen_words)?;
             }
         }
+    } else if input_path.is_file() {
+        println!("Processing single file: {}", input_path.display());
+        process_file(input_path, &mut seen_words)?;
     } else {
-        process_file(path, &mut seen_words)?;
+        eprintln!("Error: {} is neither a file nor a directory", input_path.display());
+        std::process::exit(1);
     }
+
+    println!("Total unique words found: {}", seen_words.len());
 
     // Create output Rust file after processing all inputs
     let mut output = File::create(output_path)?;
