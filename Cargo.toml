@@ -27,3 +27,7 @@ lazy_static = "1.4.0"
 [[bin]]
 name = "dictionary"
 path = "src/bin/dictionary.rs"
+
+[[bin]]
+name = "is_gibberish"
+path = "src/bin/is_gibberish.rs"

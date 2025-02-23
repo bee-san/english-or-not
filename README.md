@@ -1,6 +1,26 @@
-# English Text Detector
+# Gibberish Detection Tool
 
-A Rust library that determines whether a given text is likely to be English using multiple analysis techniques. The library is particularly effective at distinguishing between actual English text and random character sequences, gibberish, or non-English text.
+A Rust library and command-line tool that determines whether text is likely to be English or gibberish. It analyzes text using a combination of dictionary lookups and n-gram pattern matching.
+
+## Installation
+
+### As a Command-Line Tool
+
+```bash
+cargo install gibberish-or-not
+```
+
+This installs two binaries:
+- `is_gibberish` - Check if text is gibberish
+- `dictionary` - Generate/update the dictionary.rs file
+
+### As a Library Dependency
+
+Add to your `Cargo.toml`:
+```toml
+[dependencies]
+gibberish-or-not = "0.7.0"
+```
 
 ## How It Works
 
