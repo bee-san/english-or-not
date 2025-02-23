@@ -130,9 +130,23 @@ pub fn is_gibberish(text: &str) -> bool {
         score
     };
 
-    // Text must have both an English word AND good n-gram scores to be considered English
-    let ngram_score_good = trigram_score > 0.5 || quadgram_score > 0.5;
-    let result = !(has_english_word && ngram_score_good);
+    // Check the count of English words first
+    let english_word_count = words.iter()
+        .filter(|word| is_english_word(word))
+        .count();
+    
+    // Only use ngram analysis if we have 1 English word
+    let result = if english_word_count >= 2 {
+        false // Two or more English words = definitely English
+    } else if english_word_count == 1 {
+        // Require reasonable ngram scores
+        let ngram_score_good = trigram_score > 0.15 || quadgram_score > 0.1;
+        !ngram_score_good
+    } else {
+        // No English words, just check ngram scores more leniently
+        let ngram_score_good = trigram_score > 0.1 || quadgram_score > 0.05;
+        !ngram_score_good
+    };
     println!("Final decision: text is {} (has_english_word={}, ngram_score_good={})", 
              if result { "gibberish" } else { "English" },
              has_english_word,
