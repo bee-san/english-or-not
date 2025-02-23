@@ -78,24 +78,28 @@ Our advanced detection algorithm uses three main components:
 - Zero runtime loading overhead
 - Includes technical terms and proper nouns
 
-### 2. 🧮 N-gram Scoring
-- **Trigrams** (3-letter sequences) - 20% weight
-- **Quadgrams** (4-letter sequences) - 25% weight
+### 2. 🧮 N-gram Analysis
+- **Trigrams** (3-letter sequences)
+  - Needs >15% match for single-word texts
+  - Needs >10% match for no-word texts
+- **Quadgrams** (4-letter sequences)
+  - Needs >10% match for single-word texts
+  - Needs >5% match for no-word texts
 - Trained on massive English text corpus
 - Catches patterns humans can't see
 
-### 3. 🎯 Smart Scoring
-- Multiple English words = Valid text
-- Single word requires good n-gram scores
-- No words needs excellent n-gram scores
-- Short text (<10 chars) uses dictionary only
+### 3. 🎯 Smart Classification
+- Text with 2+ English words → Valid English
+- Text with 1 English word → Must pass n-gram thresholds
+- Text with no English words → Must pass lower n-gram thresholds
+- Short text (<10 chars) → Dictionary check only
 
 ## 📊 Comparison
 
 | Feature | Gibberish-or-not | Other Detectors |
 |---------|------------------|-----------------|
 | Speed | ⚡ 0.1ms | 🐌 1-2ms |
-| Accuracy | ✅ 99% | 🤔 80-90% |
+| Dictionary Size | 📚 370k+ words | 📖 10k-50k words |
 | Memory | 📦 5MB | 💾 20MB+ |
 | Setup | 🚀 One command | 📚 Complex |
 
@@ -120,19 +124,6 @@ Check out our [Contributing Guide](CONTRIBUTING.md) to get started.
 
 MIT License - see the [LICENSE](LICENSE) file for details.
 
-3. **Letter Frequency Analysis**
-   - Compares letter frequencies with standard English letter distribution
-   - Uses empirical frequency data for all 26 letters
-
-4. **Vowel-Consonant Ratio**
-   - Analyzes the balance between vowels and consonants
-   - Compares against typical English ratio (around 0.5)
-
-The process involves:
-1. Text preprocessing (lowercase conversion, removal of non-English characters)
-2. Multiple parallel analyses (n-grams, words, letters, ratios)
-3. Weighted scoring system combining all metrics
-4. Threshold-based final classification
 
 ## Usage
 
