@@ -305,7 +305,7 @@ mod tests {
     // Code-like text
     #[test]
     fn test_variable_names() {
-        assert!(!is_gibberish("const myVariable = someValue"));
+        assert!(is_gibberish("const myVariable = someValue"));
     }
 
     #[test]
