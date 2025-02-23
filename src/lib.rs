@@ -158,10 +158,9 @@ pub fn is_gibberish(text: &str) -> bool {
         let ngram_score_good = trigram_score > 0.1 || quadgram_score > 0.05;
         !ngram_score_good
     };
-    println!("Final decision: text is {} (has_english_word={}, ngram_score_good={})", 
+    println!("Final decision: text is {} (has_english_word={})", 
              if result { "gibberish" } else { "English" },
-             has_english_word,
-             ngram_score_good);
+             has_english_word);
     result
 }
 
