@@ -389,4 +389,19 @@ mod tests {
     fn test_base64_description() {
         assert!(!is_gibberish("Multiple base64 encodings"));
     }
+
+    // Common passwords and usernames
+    #[test]
+    fn test_admin_string() {
+        assert!(!is_gibberish("admin"));
+    }
+
+    #[test]
+    fn test_common_passwords() {
+        assert!(!is_gibberish("qwerty"));
+        assert!(!is_gibberish("abc123"));
+        assert!(!is_gibberish("password1"));
+        assert!(!is_gibberish("iloveyou"));
+        assert!(!is_gibberish("11111111"));
+    }
 }
