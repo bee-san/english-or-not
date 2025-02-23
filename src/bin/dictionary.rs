@@ -30,6 +30,5 @@ fn main() -> io::Result<()> {
     // Write footer
     writeln!(output, "}};")?;
     
-    println!("Dictionary generated successfully at {}", output_file);
     Ok(())
 }

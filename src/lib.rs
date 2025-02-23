@@ -75,22 +75,17 @@ fn generate_ngrams(text: &str, n: usize) -> Vec<String> {
 
 
 pub fn is_gibberish(text: &str) -> bool {
-    println!("Analyzing text: '{}'", text);
-    
     // Clean the text first
     let cleaned = clean_text(text);
-    println!("Cleaned text: '{}'", cleaned);
     
     // Check if empty after cleaning
     if cleaned.is_empty() {
-        println!("Text is empty after cleaning");
         return true;
     }
 
     // For very short cleaned text, only check if it's an English word
     if cleaned.len() < 10 {
         let is_english = is_english_word(&cleaned);
-        println!("Short text: checking if '{}' is English word: {}", cleaned, is_english);
         return !is_english;
     }
 
@@ -98,15 +93,8 @@ pub fn is_gibberish(text: &str) -> bool {
     let words: Vec<&str> = cleaned.split_whitespace()
         .filter(|word| !word.is_empty())
         .collect();
-    println!("Words found: {:?}", words);
 
-    let has_english_word = words.iter().any(|word| {
-        let is_english = is_english_word(word);
-        if is_english {
-            println!("Found English word: '{}'", word);
-        }
-        is_english
-    });
+    let has_english_word = words.iter().any(|word| is_english_word(word));
 
     // Proceed with trigram/quadgram analysis
     let trigrams = generate_ngrams(&cleaned, 3);
@@ -122,23 +110,15 @@ pub fn is_gibberish(text: &str) -> bool {
 
     // Calculate scores
     let trigram_score = if trigrams.is_empty() { 
-        println!("No trigrams found");
         0.0 
     } else { 
-        let score = valid_trigrams / trigrams.len() as f64;
-        println!("Trigram analysis: {} valid out of {} total (score: {:.2})", 
-                valid_trigrams, trigrams.len(), score);
-        score
+        valid_trigrams / trigrams.len() as f64
     };
 
     let quadgram_score = if quadgrams.is_empty() { 
-        println!("No quadgrams found");
         0.0 
     } else { 
-        let score = valid_quadgrams / quadgrams.len() as f64;
-        println!("Quadgram analysis: {} valid out of {} total (score: {:.2})", 
-                valid_quadgrams, quadgrams.len(), score);
-        score
+        valid_quadgrams / quadgrams.len() as f64
     };
 
     // Check the count of English words first
@@ -147,7 +127,7 @@ pub fn is_gibberish(text: &str) -> bool {
         .count();
     
     // Only use ngram analysis if we have 1 English word
-    let result = if english_word_count >= 2 {
+    if english_word_count >= 2 {
         false // Two or more English words = definitely English
     } else if english_word_count == 1 {
         // Require reasonable ngram scores
@@ -157,11 +137,7 @@ pub fn is_gibberish(text: &str) -> bool {
         // No English words, just check ngram scores more leniently
         let ngram_score_good = trigram_score > 0.1 || quadgram_score > 0.05;
         !ngram_score_good
-    };
-    println!("Final decision: text is {} (has_english_word={})", 
-             if result { "gibberish" } else { "English" },
-             has_english_word);
-    result
+    }
 }
 
 #[cfg(test)]
