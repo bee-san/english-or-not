@@ -47,7 +47,7 @@ static ENGLISH_LETTERS: phf::Set<char> = phf_set! {
 
 fn clean_text(text: &str) -> String {
     text.chars()
-        .map(|c| if ENGLISH_LETTERS.contains(&c) {
+        .map(|c| if ENGLISH_LETTERS.contains(&c) || c.is_ascii_digit() {
             c.to_ascii_lowercase()
         } else if c.is_whitespace() {
             ' '
