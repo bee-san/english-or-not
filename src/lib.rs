@@ -168,32 +168,121 @@ pub fn is_gibberish(text: &str) -> bool {
 mod tests {
     use super::*;
 
+    // Valid English text tests
     #[test]
-    fn test_english_text() {
+    fn test_pangram() {
         assert!(!is_gibberish("The quick brown fox jumps over the lazy dog."));
+    }
+
+    #[test]
+    fn test_simple_sentence() {
         assert!(!is_gibberish("This is a simple English sentence."));
+    }
+
+    #[test]
+    fn test_hello_world() {
         assert!(!is_gibberish("Hello, world!"));
-        // Test single English word
+    }
+
+    #[test]
+    fn test_single_word() {
         assert!(!is_gibberish("hello"));
-        // Test text with common trigrams/quadgrams
+    }
+
+    #[test]
+    fn test_common_ngrams() {
         assert!(!is_gibberish("ther with tion"));
     }
 
     #[test]
-    fn test_non_english_text() {
-        assert!(is_gibberish("12345 67890"));
-        assert!(is_gibberish(""));
-        assert!(is_gibberish("你好世界"));
-        assert!(is_gibberish("!@#$%^&*()"));
-        // Text without enough English letters
+    fn test_technical_text() {
+        assert!(!is_gibberish("The function returns a boolean value."));
     }
 
     #[test]
-    fn test_encoded_patterns() {
-        assert!(is_gibberish("MOTCk4ywLLjjEE2="));
-        assert!(is_gibberish("4-Fc@w7MF"));
-        assert!(is_gibberish("Vszzc hvwg wg zcbu"));
-        assert!(is_gibberish("buubdl"));
+    fn test_mixed_case() {
+        assert!(!is_gibberish("MiXeD cAsE text IS still English"));
     }
 
+    #[test]
+    fn test_with_punctuation() {
+        assert!(!is_gibberish("Hello! How are you? I'm doing well."));
+    }
+
+    #[test]
+    fn test_long_text() {
+        assert!(!is_gibberish("This is a longer piece of text that contains multiple sentences and should definitely be recognized as valid English content."));
+    }
+
+    // Gibberish text tests
+    #[test]
+    fn test_numbers_only() {
+        assert!(is_gibberish("12345 67890"));
+    }
+
+    #[test]
+    fn test_empty_string() {
+        assert!(is_gibberish(""));
+    }
+
+    #[test]
+    fn test_non_english_chars() {
+        assert!(is_gibberish("你好世界"));
+    }
+
+    #[test]
+    fn test_special_chars() {
+        assert!(is_gibberish("!@#$%^&*()"));
+    }
+
+    #[test]
+    fn test_base64_like() {
+        assert!(is_gibberish("MOTCk4ywLLjjEE2="));
+    }
+
+    #[test]
+    fn test_short_gibberish() {
+        assert!(is_gibberish("4-Fc@w7MF"));
+    }
+
+    #[test]
+    fn test_letter_substitution() {
+        assert!(is_gibberish("Vszzc hvwg wg zcbu"));
+    }
+
+    #[test]
+    fn test_repeated_chars() {
+        assert!(is_gibberish("aaaaaa bbbbbb"));
+    }
+
+    // Edge cases
+    #[test]
+    fn test_single_letter() {
+        assert!(!is_gibberish("a"));
+    }
+
+    #[test]
+    fn test_mixed_valid_invalid() {
+        assert!(!is_gibberish("hello xkcd world"));
+    }
+
+    #[test]
+    fn test_common_abbreviation() {
+        assert!(!is_gibberish("NASA FBI CIA"));
+    }
+
+    #[test]
+    fn test_with_numbers() {
+        assert!(!is_gibberish("Room 101 is down the hall"));
+    }
+
+    #[test]
+    fn test_keyboard_mash() {
+        assert!(is_gibberish("asdfgh jkl"));
+    }
+
+    #[test]
+    fn test_repeated_word() {
+        assert!(!is_gibberish("buffalo buffalo buffalo"));
+    }
 }
