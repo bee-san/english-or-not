@@ -66,7 +66,7 @@ fn process_file(path: &Path, seen_words: &mut HashSet<String>) -> io::Result<()>
     
     for line in text.lines() {
         let word = line.trim();
-        if !word.is_empty() && !word.contains(char::is_whitespace) {
+        if !word.is_empty() && !word.contains(char::is_whitespace) && word.len() > 2 {
             seen_words.insert(word.to_string());
         }
     }
