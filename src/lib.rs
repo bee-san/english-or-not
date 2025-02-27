@@ -198,8 +198,8 @@ pub fn is_gibberish(text: &str) -> bool {
         }
         !ngram_score_good
     } else {
-        // No English words, just check ngram scores more strictly
-        let ngram_score_good = trigram_score > 0.05 || quadgram_score > 0.03;
+        // No English words, check ngram scores very strictly
+        let ngram_score_good = trigram_score > 0.1 || quadgram_score > 0.05;
         if is_test {
             println!("0 English words, ngram_score_good = {}", ngram_score_good);
             println!("Result: {}", !ngram_score_good);
