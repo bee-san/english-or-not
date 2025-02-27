@@ -75,36 +75,17 @@ fn generate_ngrams(text: &str, n: usize) -> Vec<String> {
 
 
 pub fn is_gibberish(text: &str) -> bool {
-    // For debugging failing tests
-    let is_test = text == "xgcyzw Snh fabkqta,jedm ioopl  uru v" || 
-                  text == "'D<=BL C: 6@57? EI5FHN^ >I8;9 AM JCK" ||
-                  text == "x,jecmdizo l  orn pg y waSuhkfubtqva";
-    
-    if is_test {
-        println!("Analyzing text: '{}'", text);
-    }
-    
     // Clean the text first
     let cleaned = clean_text(text);
     
-    if is_test {
-        println!("Cleaned text: '{}'", cleaned);
-    }
-    
     // Check if empty after cleaning
     if cleaned.is_empty() {
-        if is_test {
-            println!("Text is empty after cleaning");
-        }
         return true;
     }
 
     // For very short cleaned text, only check if it's an English word
     if cleaned.len() < 10 {
         let is_english = is_english_word(&cleaned);
-        if is_test {
-            println!("Short text (len < 10): is_english_word = {}", is_english);
-        }
         return !is_english;
     }
 
@@ -113,18 +94,9 @@ pub fn is_gibberish(text: &str) -> bool {
         .filter(|word| !word.is_empty())
         .collect();
 
-    if is_test {
-        println!("Words found: {:?}", words);
-    }
-
     // Proceed with trigram/quadgram analysis
     let trigrams = generate_ngrams(&cleaned, 3);
     let quadgrams = generate_ngrams(&cleaned, 4);
-
-    if is_test {
-        println!("Generated trigrams: {:?}", trigrams);
-        println!("Generated quadgrams: {:?}", quadgrams);
-    }
 
     let valid_trigrams = trigrams.iter()
         .filter(|gram| COMMON_TRIGRAMS.contains(gram.as_str()))
@@ -133,11 +105,6 @@ pub fn is_gibberish(text: &str) -> bool {
     let valid_quadgrams = quadgrams.iter()
         .filter(|gram| COMMON_QUADGRAMS.contains(gram.as_str()))
         .collect::<Vec<_>>();
-
-    if is_test {
-        println!("Valid trigrams: {:?}", valid_trigrams);
-        println!("Valid quadgrams: {:?}", valid_quadgrams);
-    }
 
     // Calculate scores
     let trigram_score = if trigrams.is_empty() { 
@@ -152,19 +119,10 @@ pub fn is_gibberish(text: &str) -> bool {
         valid_quadgrams.len() as f64 / quadgrams.len() as f64
     };
     
-    if is_test {
-        println!("Trigram score: {}", trigram_score);
-        println!("Quadgram score: {}", quadgram_score);
-    }
-    
     // Check for non-printable characters which are strong indicators of gibberish
     let non_printable_count = text.chars()
         .filter(|&c| c < ' ' && c != '\n' && c != '\r' && c != '\t')
         .count();
-    
-    if is_test && non_printable_count > 0 {
-        println!("Non-printable characters found: {}", non_printable_count);
-    }
     
     // If there are non-printable characters, it's likely gibberish
     if non_printable_count > 0 {
@@ -178,32 +136,16 @@ pub fn is_gibberish(text: &str) -> bool {
     
     let english_word_count = english_words.len();
     
-    if is_test {
-        println!("English words found: {:?}", english_words);
-        println!("English word count: {}", english_word_count);
-    }
-    
     // Only use ngram analysis if we have 1 English word
     if english_word_count >= 2 {
-        if is_test {
-            println!("Result: Not gibberish (2+ English words)");
-        }
         false // Two or more English words = definitely English
     } else if english_word_count == 1 {
         // Require reasonable ngram scores
         let ngram_score_good = trigram_score > 0.15 || quadgram_score > 0.1;
-        if is_test {
-            println!("1 English word, ngram_score_good = {}", ngram_score_good);
-            println!("Result: {}", !ngram_score_good);
-        }
         !ngram_score_good
     } else {
         // No English words, check ngram scores very strictly
         let ngram_score_good = trigram_score > 0.1 || quadgram_score > 0.05;
-        if is_test {
-            println!("0 English words, ngram_score_good = {}", ngram_score_good);
-            println!("Result: {}", !ngram_score_good);
-        }
         !ngram_score_good
     }
 }
