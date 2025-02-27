@@ -410,4 +410,32 @@ mod tests {
     fn test_password_numbers() {
         assert!(!is_gibberish("11111111"));
     }
+    
+    // Tests for strings that should be detected as gibberish
+    // These are from failed decoder tests in another project
+    
+    #[test]
+    fn test_rot47_gibberish() {
+        assert!(is_gibberish("'D<=BL C: 6@57? EI5FHN^ >I8;9 AM JCK"));
+    }
+    
+    #[test]
+    fn test_binary_decoder_gibberish1() {
+        assert!(is_gibberish("\u{3} \u{e}@:\u{1}`\u{7}\u{18}\u{e}@/\u{1}<\u{e}p;An\u{2}p\u{19}`o\u{3}<\u{c}p6\u{1}J\u{2}p\u{18}`o\u{3}\r"));
+    }
+    
+    #[test]
+    fn test_railfence_gibberish() {
+        assert!(is_gibberish("xgcyzw Snh fabkqta,jedm ioopl  uru v"));
+    }
+    
+    #[test]
+    fn test_binary_decoder_gibberish2() {
+        assert!(is_gibberish("\0*\0\u{1a}\0\r\u{10}\u{7}\u{18}\u{1}\0\u{1}R\0s\0\u{10}\0\u{18}`\rp\u{6}p\u{3}X\u{1}^\0l\0:@\u{1d}\0\u{c}P\u{6} \u{1}\u{e}"));
+    }
+    
+    #[test]
+    fn test_astar_gibberish() {
+        assert!(is_gibberish(")W?:!|.b"));
+    }
 }
