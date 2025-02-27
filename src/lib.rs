@@ -505,4 +505,9 @@ mod tests {
     fn test_astar_gibberish() {
         assert!(is_gibberish(")W?:!|.b"));
     }
+    
+    #[test]
+    fn test_railfence_gibberish2() {
+        assert!(is_gibberish("x,jecmdizo l  orn pg y waSuhkfubtqva"));
+    }
 }
