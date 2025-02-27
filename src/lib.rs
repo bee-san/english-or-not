@@ -77,7 +77,8 @@ fn generate_ngrams(text: &str, n: usize) -> Vec<String> {
 pub fn is_gibberish(text: &str) -> bool {
     // For debugging failing tests
     let is_test = text == "xgcyzw Snh fabkqta,jedm ioopl  uru v" || 
-                  text == "'D<=BL C: 6@57? EI5FHN^ >I8;9 AM JCK";
+                  text == "'D<=BL C: 6@57? EI5FHN^ >I8;9 AM JCK" ||
+                  text == "x,jecmdizo l  orn pg y waSuhkfubtqva";
     
     if is_test {
         println!("Analyzing text: '{}'", text);
