@@ -94,7 +94,7 @@ pub fn is_gibberish(text: &str) -> bool {
         .filter(|word| !word.is_empty())
         .collect();
 
-    let has_english_word = words.iter().any(|word| is_english_word(word));
+    let _has_english_word = words.iter().any(|word| is_english_word(word));
 
     // Proceed with trigram/quadgram analysis
     let trigrams = generate_ngrams(&cleaned, 3);
@@ -120,6 +120,16 @@ pub fn is_gibberish(text: &str) -> bool {
     } else { 
         valid_quadgrams / quadgrams.len() as f64
     };
+    
+    // Check for non-printable characters which are strong indicators of gibberish
+    let non_printable_count = text.chars()
+        .filter(|&c| c < ' ' && c != '\n' && c != '\r' && c != '\t')
+        .count();
+    
+    // If there are non-printable characters, it's likely gibberish
+    if non_printable_count > 0 {
+        return true;
+    }
 
     // Check the count of English words first
     let english_word_count = words.iter()
@@ -134,8 +144,8 @@ pub fn is_gibberish(text: &str) -> bool {
         let ngram_score_good = trigram_score > 0.15 || quadgram_score > 0.1;
         !ngram_score_good
     } else {
-        // No English words, just check ngram scores more leniently
-        let ngram_score_good = trigram_score > 0.1 || quadgram_score > 0.05;
+        // No English words, just check ngram scores more strictly
+        let ngram_score_good = trigram_score > 0.05 || quadgram_score > 0.03;
         !ngram_score_good
     }
 }
