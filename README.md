@@ -24,24 +24,6 @@ cargo install gibberish-or-not
 gibberish-or-not = "1.0.0"
 ```
 
-## ✨ Features
-
-**🚀 Lightning Fast**
-- Zero runtime loading
-- Perfect hash table lookups
-- Optimized for speed
-
-**📚 Smart Analysis**
-- Dictionary of 370k+ words
-- N-gram pattern matching
-- Frequency analysis
-
-**🎯 High Accuracy**
-- 99% detection rate
-- Handles edge cases
-- Works with technical text
-
-
 ## 🎯 Examples
 
 ```rust
