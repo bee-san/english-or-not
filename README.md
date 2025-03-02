@@ -27,15 +27,15 @@ gibberish-or-not = "1.0.0"
 ## 🎯 Examples
 
 ```rust
-use gibberish_or_not::is_gibberish;
+use gibberish_or_not::{is_gibberish, Sensitivity};
 
 // Valid English
-assert!(!is_gibberish("The quick brown fox jumps over the lazy dog"));
-assert!(!is_gibberish("Technical terms like TCP/IP and README.md work too"));
+assert!(!is_gibberish("The quick brown fox jumps over the lazy dog", Sensitivity::Medium));
+assert!(!is_gibberish("Technical terms like TCP/IP and README.md work too", Sensitivity::Medium));
 
 // Gibberish
-assert!(is_gibberish("asdf jkl qwerty"));
-assert!(is_gibberish("xkcd vwpq mntb"));
+assert!(is_gibberish("asdf jkl qwerty", Sensitivity::Medium));
+assert!(is_gibberish("xkcd vwpq mntb", Sensitivity::Medium));
 ```
 
 ## 🔬 How It Works
@@ -62,6 +62,48 @@ Our advanced detection algorithm uses three main components:
 - Text with 1 English word → Must pass n-gram thresholds
 - Text with no English words → Must pass lower n-gram thresholds
 - Short text (<10 chars) → Dictionary check only (not enough data for n-grams)
+
+## 🎚️ Sensitivity Levels
+
+The library provides three sensitivity levels to fine-tune gibberish detection:
+
+### Low Sensitivity
+- Most strict classification
+- Requires very high confidence to classify text as English
+- Best for detecting texts that appear English-like but are actually gibberish
+- Thresholds:
+  - 2+ English words: Needs >20% trigram/quadgram match
+  - 1 English word: Needs >25% trigram/quadgram match
+  - No English words: Always classified as gibberish
+
+### Medium Sensitivity (Default)
+- Balanced approach for general use
+- Combines dictionary and n-gram analysis
+- Default mode suitable for most applications
+- Thresholds:
+  - 2+ English words: Automatically classified as English
+  - 1 English word: Needs >15% trigram or >10% quadgram match
+  - No English words: Needs >10% trigram or >5% quadgram match
+
+### High Sensitivity
+- Most lenient classification
+- Favors classifying text as English
+- Best when input is mostly gibberish and any English-like patterns are significant
+- Thresholds:
+  - Any English word: Automatically classified as English
+  - No English words: Needs >5% trigram or >3% quadgram match
+
+```rust
+use gibberish_or_not::{is_gibberish, Sensitivity};
+
+// Example text with one English word "iron"
+let text = "Rcl maocr otmwi lit dnoen oehc 13 iron seah.";
+
+// Different results based on sensitivity
+assert!(is_gibberish(text, Sensitivity::Low));    // Classified as gibberish
+assert!(!is_gibberish(text, Sensitivity::Medium)); // Classified as English
+assert!(!is_gibberish(text, Sensitivity::High));   // Classified as English
+```
 
 ## 👥 Contributing
 
