@@ -425,6 +425,16 @@ mod tests {
     // These are from failed decoder tests in another project
     
     #[test]
+    fn test_scrambled_words_gibberish1() {
+        assert!(is_gibberish("Aiees Orttaster! Netts'e t ter oe es ntenoo"));
+    }
+    
+    #[test]
+    fn test_scrambled_words_gibberish2() {
+        assert!(is_gibberish("Rcl maocr otmwi lit dnoen oehc 13 iron seah."));
+    }
+    
+    #[test]
     fn test_rot47_gibberish() {
         assert!(is_gibberish("'D<=BL C: 6@57? EI5FHN^ >I8;9 AM JCK"));
     }
