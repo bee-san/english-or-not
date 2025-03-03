@@ -1,6 +1,7 @@
 use phf::phf_set;
 
 mod dictionary;
+mod passwords;
 
 /// Sensitivity level for gibberish detection
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -24,6 +25,33 @@ fn is_english_word(word: &str) -> bool {
     dictionary::ENGLISH_WORDS.contains(word)
 }
 
+/// Checks if the given text matches a known common password.
+/// 
+/// This function checks if the input text exactly matches a password from a comprehensive
+/// list of common passwords, including:
+/// - Most commonly used passwords
+/// - Default passwords
+/// - Dictionary-based passwords
+/// 
+/// # Arguments
+/// 
+/// * `text` - The text to check against the password list
+/// 
+/// # Returns
+/// 
+/// * `true` if the text exactly matches a known password
+/// * `false` otherwise
+/// 
+/// # Examples
+/// 
+/// ```
+/// use gibberish_or_not::is_password;
+/// assert!(is_password("123456")); // A very common password
+/// assert!(!is_password("not-a-common-password")); // Not in the password list
+/// ```
+pub fn is_password(text: &str) -> bool {
+    passwords::PASSWORDS.contains(text)
+}
 // The dictionary module provides a perfect hash table implementation
 // using the phf crate, which is generated at compile time
 // for optimal performance and memory efficiency
@@ -203,6 +231,38 @@ fn generate_ngrams(text: &str, n: usize) -> Vec<String> {
 
 #[cfg(test)]
 mod tests {
+    // Tests for the password detection functionality
+    #[test]
+    fn test_common_passwords() {
+        assert!(is_password("123456"));
+        assert!(is_password("password"));
+        assert!(is_password("qwerty"));
+        assert!(is_password("abc123"));
+    }
+
+
+    #[test]
+    fn test_numeric_passwords() {
+        assert!(is_password("123456789"));
+        assert!(is_password("12345678"));
+        assert!(is_password("1234567"));
+    }
+
+    #[test]
+    fn test_word_passwords() {
+        assert!(is_password("iloveyou"));
+        assert!(is_password("admin"));
+        assert!(is_password("welcome"));
+    }
+
+    #[test]
+    fn test_non_passwords() {
+        assert!(!is_password(""));  // Empty string
+        assert!(!is_password("this is not a password"));  // Contains spaces
+        assert!(!is_password("verylongandunlikelypasswordthatnoonewoulduse"));  // Too long
+        assert!(!is_password("unique_string_123")); // Not in common list
+    }
+
     use super::*;
 
     // Helper function to run tests with different sensitivities

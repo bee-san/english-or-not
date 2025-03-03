@@ -32,3 +32,7 @@ path = "src/bin/dictionary.rs"
 [[bin]]
 name = "is_gibberish"
 path = "src/bin/is_gibberish.rs"
+
+[[bin]]
+name = "passwords"
+path = "src/bin/passwords.rs"

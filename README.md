@@ -29,6 +29,9 @@ gibberish-or-not = "1.0.0"
 ```rust
 use gibberish_or_not::{is_gibberish, Sensitivity};
 
+// Password Detection
+assert!(is_password("123456"));  // Detects common passwords
+
 // Valid English
 assert!(!is_gibberish("The quick brown fox jumps over the lazy dog", Sensitivity::Medium));
 assert!(!is_gibberish("Technical terms like TCP/IP and README.md work too", Sensitivity::Medium));
@@ -105,7 +108,28 @@ assert!(!is_gibberish(text, Sensitivity::Medium)); // Classified as English
 assert!(!is_gibberish(text, Sensitivity::High));   // Classified as English
 ```
 
-## 👥 Contributing
+## 🔑 Password Detection
+
+The library includes functionality to detect common passwords:
+
+### Detection Method
+- Uses a comprehensive list of over 10,000 common passwords
+- Performs exact matching against known passwords
+- Supports multiple encodings (UTF-8, UTF-16)
+- Zero runtime loading overhead using perfect hash table
+
+### Example Usage
+
+```rust
+use gibberish_or_not::is_password;
+
+// Check if a string is a common password
+assert!(is_password("123456"));        // True - very common password
+assert!(is_password("P@ssw0rd"));      // True - common password
+assert!(!is_password("_a_super_unique_password_skibidi_ohio_rizz")); // False - not in common password list
+```
+
+## � Contributing
 
 Contributions are welcome! Here's how you can help:
 
