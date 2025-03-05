@@ -146,12 +146,12 @@ pub fn is_gibberish(text: &str, sensitivity: Sensitivity) -> bool {
     }
 
     // Count English words
-    let english_words = words.iter().filter(|word| is_english_word(word)).count();
+    let english_word_count = words.iter().filter(|word| is_english_word(word)).count();
 
     let english_word_ratio = if words.is_empty() {
         0.0
     } else {
-        english_words as f64 / words.len() as f64
+        english_word_count as f64 / words.len() as f64
     };
 
     // Special case for mixed numbers and letters gibberish
@@ -173,11 +173,11 @@ pub fn is_gibberish(text: &str, sensitivity: Sensitivity) -> bool {
             if english_word_ratio > 0.8 {
                 // If almost all words are English (>80%), accept as English
                 false
-            } else if english_words >= 3 {
+            } else if english_word_count >= 3 {
                 // For 3+ English words, need decent n-gram scores
                 // This helps catch mixed gibberish with some English words
-                trigram_score <= 0.2 && quadgram_score <= 0.2
-            } else if english_words == 1 {
+                trigram_score <= 0.10 && quadgram_score <= 0.10
+            } else if english_word_count == 1 {
                 // For single English word:
                 // - Very high n-gram scores (>0.8) are suspicious, likely artificial
                 // - Moderate n-gram scores (0.25-0.8) might be English
@@ -187,7 +187,7 @@ pub fn is_gibberish(text: &str, sensitivity: Sensitivity) -> bool {
                     true
                 } else {
                     // Otherwise use normal threshold
-                    trigram_score <= 0.25 && quadgram_score <= 0.25
+                    trigram_score <= 0.30 && quadgram_score <= 0.30
                 }
             } else {
                 // No English words = gibberish
@@ -197,9 +197,9 @@ pub fn is_gibberish(text: &str, sensitivity: Sensitivity) -> bool {
         }
         Sensitivity::Medium => {
             // Original balanced approach
-            if english_words >= 2 {
+            if english_word_count >= 2 {
                 false // Two or more English words = definitely English
-            } else if english_words == 1 {
+            } else if english_word_count == 1 {
                 // Require reasonable ngram scores
                 let ngram_score_good = trigram_score > 0.15 || quadgram_score > 0.1;
                 !ngram_score_good
@@ -211,7 +211,7 @@ pub fn is_gibberish(text: &str, sensitivity: Sensitivity) -> bool {
         }
         Sensitivity::High => {
             // More lenient - favor classifying as English
-            if english_words >= 1 {
+            if english_word_count >= 1 {
                 false // Any English word = probably English
             } else {
                 // No English words, but be lenient with n-grams
@@ -1587,5 +1587,136 @@ mod tests {
     #[test]
     fn test_gibberish_string_7() {
         assert!(is_gibberish(" ehe o mldhe t otecoheioeaiosaaaconsh thiehc ", Sensitivity::Low));
+    }
+
+    #[test]
+    fn test_valid_english_text() {
+        let text = "hello this is an example text";
+        println!("\n==== DEBUGGING VALID ENGLISH TEXT ====");
+        println!("Original text: '{}'", text);
+
+        // Debug the cleaning process
+        let cleaned = clean_text(text);
+        println!("Cleaned text: '{}'", cleaned);
+
+        // Split into words and check each one
+        let words: Vec<&str> = cleaned
+            .split_whitespace()
+            .filter(|word| !word.is_empty())
+            .collect();
+
+        println!("\n== WORD ANALYSIS ==");
+        println!("Total words: {}", words.len());
+
+        let mut english_word_count = 0;
+        println!("Words after splitting:");
+        for word in &words {
+            let is_english = is_english_word(word);
+            if is_english {
+                english_word_count += 1;
+            }
+            println!("  \"{}\" - {}", word, if is_english { "ENGLISH WORD" } else { "not English" });
+        }
+
+        println!(
+            "English words found: {} out of {} ({:.2}%)",
+            english_word_count,
+            words.len(),
+            if words.is_empty() { 0.0 } else { english_word_count as f64 / words.len() as f64 * 100.0 }
+        );
+
+        // Check n-grams
+        let trigrams = generate_ngrams(&cleaned, 3);
+        let quadgrams = generate_ngrams(&cleaned, 4);
+
+        let valid_trigrams = trigrams
+            .iter()
+            .filter(|gram| COMMON_TRIGRAMS.contains(gram.as_str()))
+            .collect::<Vec<_>>();
+
+        let valid_quadgrams = quadgrams
+            .iter()
+            .filter(|gram| COMMON_QUADGRAMS.contains(gram.as_str()))
+            .collect::<Vec<_>>();
+
+        let trigram_score = if trigrams.is_empty() {
+            0.0
+        } else {
+            valid_trigrams.len() as f64 / trigrams.len() as f64
+        };
+
+        let quadgram_score = if quadgrams.is_empty() {
+            0.0
+        } else {
+            valid_quadgrams.len() as f64 / quadgrams.len() as f64
+        };
+
+        println!("\n== TRIGRAM ANALYSIS ==");
+        println!("Total trigrams: {}", trigrams.len());
+        println!("All trigrams:");
+        for trigram in &trigrams {
+            let is_common = COMMON_TRIGRAMS.contains(trigram.as_str());
+            println!("  \"{}\" - {}", trigram, if is_common { "COMMON" } else { "uncommon" });
+        }
+        println!("Trigram score: {:.3}", trigram_score);
+
+        println!("\n== QUADGRAM ANALYSIS ==");
+        println!("Total quadgrams: {}", quadgrams.len());
+        println!("All quadgrams:");
+        for quadgram in &quadgrams {
+            let is_common = COMMON_QUADGRAMS.contains(quadgram.as_str());
+            println!("  \"{}\" - {}", quadgram, if is_common { "COMMON" } else { "uncommon" });
+        }
+        println!("Quadgram score: {:.3}", quadgram_score);
+
+        // Calculate trigram coverage
+        let trigram_coverage = if cleaned.len() <= 3 {
+            1.0
+        } else {
+            trigrams.len() as f64 / (cleaned.len() as f64 - 2.0)
+        };
+        println!("Trigram coverage: {:.2}%", trigram_coverage * 100.0);
+
+        // Check suspicious pattern
+        let english_word_ratio = if words.is_empty() {
+            0.0
+        } else {
+            english_word_count as f64 / words.len() as f64
+        };
+
+        let suspicious_trigram_pattern = trigrams.len() <= 3
+            && trigram_score > 0.3
+            && trigram_coverage < 0.3
+            && english_word_ratio < 0.1;
+
+        println!("\n== LOW SENSITIVITY DECISION LOGIC ==");
+        println!("English word ratio: {:.2}", english_word_ratio);
+        println!("English words count: {}", english_word_count);
+        println!("Trigram score: {:.2}", trigram_score);
+        println!("Quadgram score: {:.2}", quadgram_score);
+        println!("Suspicious pattern: {}", suspicious_trigram_pattern);
+
+        if english_word_ratio > 0.8 {
+            println!("Case 1: english_word_ratio > 0.8 = {}", english_word_ratio > 0.8);
+        } else if english_word_count >= 3 {
+            let decision = trigram_score <= 0.2 && quadgram_score <= 0.2;
+            println!("Case 2: english_word_count >= 3");
+            println!("  trigram_score <= 0.2: {}", trigram_score <= 0.2);
+            println!("  quadgram_score <= 0.2: {}", quadgram_score <= 0.2);
+            println!("  Final decision: {}", decision);
+        } else if english_word_count == 1 {
+            let high_scores = trigram_score > 0.8 || quadgram_score > 0.8;
+            let low_scores = trigram_score <= 0.25 && quadgram_score <= 0.25;
+            println!("Case 3: english_word_count == 1");
+            println!("  Suspiciously high scores: {}", high_scores);
+            println!("  Low scores: {}", low_scores);
+        } else {
+            println!("Case 4: No English words");
+        }
+
+        let result = is_gibberish(text, Sensitivity::Low);
+        println!("\nFinal result: {}", if result { "GIBBERISH" } else { "ENGLISH" });
+
+        assert!(!result, "This valid English text was incorrectly classified as gibberish");
     }
 }
