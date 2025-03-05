@@ -6,19 +6,19 @@ mod passwords;
 /// Sensitivity level for gibberish detection
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Sensitivity {
-    /// Low sensitivity - requires very high confidence to classify as English.
+    /// High sensitivity - requires very high confidence to classify as English.
     /// Best for texts that appear English-like but are actually gibberish.
     /// Relies heavily on dictionary word matching.
-    Low,
-    
+    High,
+
     /// Medium sensitivity - balanced approach using both dictionary and n-gram analysis.
     /// Suitable for general purpose text classification.
     Medium,
-    
-    /// High sensitivity - more lenient classification as English.
+
+    /// Low sensitivity - more lenient classification as English.
     /// Best when input is expected to be mostly gibberish, and any English-like
     /// patterns should be flagged as potential English text.
-    High,
+    Low,
 }
 
 fn is_english_word(word: &str) -> bool {
@@ -26,24 +26,24 @@ fn is_english_word(word: &str) -> bool {
 }
 
 /// Checks if the given text matches a known common password.
-/// 
+///
 /// This function checks if the input text exactly matches a password from a comprehensive
 /// list of common passwords, including:
 /// - Most commonly used passwords
 /// - Default passwords
 /// - Dictionary-based passwords
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `text` - The text to check against the password list
-/// 
+///
 /// # Returns
-/// 
+///
 /// * `true` if the text exactly matches a known password
 /// * `false` otherwise
-/// 
+///
 /// # Examples
-/// 
+///
 /// ```
 /// use gibberish_or_not::is_password;
 /// assert!(is_password("123456")); // A very common password
@@ -59,17 +59,17 @@ pub fn is_password(text: &str) -> bool {
 /// Checks if the given text is gibberish based on English word presence
 /// and n-gram analysis scores. The sensitivity level determines how strict
 /// the classification should be.
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `text` - The input text to analyze
 /// * `sensitivity` - Controls how strict the gibberish detection should be:
-///   - Low: Very strict, requires high confidence to classify as English
+///   - High: Very strict, requires high confidence to classify as English
 ///   - Medium: Balanced approach using dictionary and n-grams
-///   - High: More lenient, flags English-like patterns as non-gibberish
-/// 
+///   - Low: More lenient, flags English-like patterns as non-gibberish
+///
 /// # Algorithm Steps
-/// 
+///
 /// 1. Clean and normalize the input text
 /// 2. Short text (len < 10) - single word check
 /// 3. Split into words and count English words:
@@ -80,7 +80,7 @@ pub fn is_password(text: &str) -> bool {
 pub fn is_gibberish(text: &str, sensitivity: Sensitivity) -> bool {
     // Clean the text first
     let cleaned = clean_text(text);
-    
+
     // Check if empty after cleaning
     if cleaned.is_empty() {
         return true;
@@ -93,7 +93,8 @@ pub fn is_gibberish(text: &str, sensitivity: Sensitivity) -> bool {
     }
 
     // Split into words and check for English words
-    let words: Vec<&str> = cleaned.split_whitespace()
+    let words: Vec<&str> = cleaned
+        .split_whitespace()
         .filter(|word| !word.is_empty())
         .collect();
 
@@ -101,47 +102,48 @@ pub fn is_gibberish(text: &str, sensitivity: Sensitivity) -> bool {
     let trigrams = generate_ngrams(&cleaned, 3);
     let quadgrams = generate_ngrams(&cleaned, 4);
 
-    let valid_trigrams = trigrams.iter()
+    let valid_trigrams = trigrams
+        .iter()
         .filter(|gram| COMMON_TRIGRAMS.contains(gram.as_str()))
         .collect::<Vec<_>>();
-    
-    let valid_quadgrams = quadgrams.iter()
+
+    let valid_quadgrams = quadgrams
+        .iter()
         .filter(|gram| COMMON_QUADGRAMS.contains(gram.as_str()))
         .collect::<Vec<_>>();
 
     // Calculate scores
-    let trigram_score = if trigrams.is_empty() { 
-        0.0 
-    } else { 
+    let trigram_score = if trigrams.is_empty() {
+        0.0
+    } else {
         valid_trigrams.len() as f64 / trigrams.len() as f64
     };
 
-    let quadgram_score = if quadgrams.is_empty() { 
-        0.0 
-    } else { 
+    let quadgram_score = if quadgrams.is_empty() {
+        0.0
+    } else {
         valid_quadgrams.len() as f64 / quadgrams.len() as f64
     };
-    
+
     // Check for non-printable characters which are strong indicators of gibberish
-    let non_printable_count = text.chars()
+    let non_printable_count = text
+        .chars()
         .filter(|&c| c < ' ' && c != '\n' && c != '\r' && c != '\t')
         .count();
-    
+
     // If there are non-printable characters, it's likely gibberish
     if non_printable_count > 0 {
         return true;
     }
 
     // Check the count of English words first
-    let english_words: Vec<&&str> = words.iter()
-        .filter(|word| is_english_word(word))
-        .collect();
-    
+    let english_words: Vec<&&str> = words.iter().filter(|word| is_english_word(word)).collect();
+
     let english_word_count = english_words.len();
-    
+
     // Adjust thresholds based on sensitivity
     match sensitivity {
-        Sensitivity::Low => {
+        Sensitivity::High => {
             // Require very high confidence - mostly dictionary based
             if english_word_count >= 3 {
                 // Need at least 2 English words and very good n-gram scores
@@ -153,7 +155,7 @@ pub fn is_gibberish(text: &str, sensitivity: Sensitivity) -> bool {
                 // No English words - extremely unlikely to be English
                 true
             }
-        },
+        }
         Sensitivity::Medium => {
             // Original balanced approach
             if english_word_count >= 2 {
@@ -167,8 +169,8 @@ pub fn is_gibberish(text: &str, sensitivity: Sensitivity) -> bool {
                 let ngram_score_good = trigram_score > 0.1 || quadgram_score > 0.05;
                 !ngram_score_good
             }
-        },
-        Sensitivity::High => {
+        }
+        Sensitivity::Low => {
             // More lenient - favor classifying as English
             if english_word_count >= 1 {
                 false // Any English word = probably English
@@ -182,7 +184,7 @@ pub fn is_gibberish(text: &str, sensitivity: Sensitivity) -> bool {
 }
 
 static COMMON_QUADGRAMS: phf::Set<&'static str> = phf_set! {
-    "tion", "atio", "that", "ther", "with", "ment", "ions", "this", 
+    "tion", "atio", "that", "ther", "with", "ment", "ions", "this",
     "here", "from", "ould", "ting", "hich", "whic", "ctio", "ever",
     "they", "thin", "have", "othe", "were", "tive", "ough", "ight"
 };
@@ -204,23 +206,33 @@ static ENGLISH_LETTERS: phf::Set<char> = phf_set! {
 
 fn clean_text(text: &str) -> String {
     text.chars()
-        .map(|c| if ENGLISH_LETTERS.contains(&c) || c.is_ascii_digit() {
-            c.to_ascii_lowercase()
-        } else if c.is_whitespace() {
-            ' '
-        } else {
-            ' '
+        .map(|c| {
+            if ENGLISH_LETTERS.contains(&c) || c.is_ascii_digit() {
+                c.to_ascii_lowercase()
+            } else if c.is_whitespace() {
+                ' '
+            } else {
+                ' '
+            }
         })
         .collect()
 }
 
 fn generate_ngrams(text: &str, n: usize) -> Vec<String> {
-    let filtered: String = text.to_lowercase()
+    let filtered: String = text
+        .to_lowercase()
         .chars()
-        .map(|ch| if ENGLISH_LETTERS.contains(&ch) || ch.is_numeric() { ch } else { ' ' })
+        .map(|ch| {
+            if ENGLISH_LETTERS.contains(&ch) || ch.is_numeric() {
+                ch
+            } else {
+                ' '
+            }
+        })
         .collect();
 
-    filtered.split_whitespace()
+    filtered
+        .split_whitespace()
         .flat_map(|word| {
             word.as_bytes()
                 .windows(n)
@@ -240,7 +252,6 @@ mod tests {
         assert!(is_password("abc123"));
     }
 
-
     #[test]
     fn test_numeric_passwords() {
         assert!(is_password("123456789"));
@@ -257,16 +268,21 @@ mod tests {
 
     #[test]
     fn test_non_passwords() {
-        assert!(!is_password(""));  // Empty string
-        assert!(!is_password("this is not a password"));  // Contains spaces
-        assert!(!is_password("verylongandunlikelypasswordthatnoonewoulduse"));  // Too long
+        assert!(!is_password("")); // Empty string
+        assert!(!is_password("this is not a password")); // Contains spaces
+        assert!(!is_password("verylongandunlikelypasswordthatnoonewoulduse")); // Too long
         assert!(!is_password("unique_string_123")); // Not in common list
     }
 
     use super::*;
 
     // Helper function to run tests with different sensitivities
-    fn test_with_sensitivities(text: &str, expected_low: bool, expected_med: bool, expected_high: bool) {
+    fn test_with_sensitivities(
+        text: &str,
+        expected_low: bool,
+        expected_med: bool,
+        expected_high: bool,
+    ) {
         assert_eq!(is_gibberish(text, Sensitivity::Low), expected_low);
         assert_eq!(is_gibberish(text, Sensitivity::Medium), expected_med);
         assert_eq!(is_gibberish(text, Sensitivity::High), expected_high);
@@ -276,7 +292,9 @@ mod tests {
     fn test_clear_english_all_sensitivities() {
         test_with_sensitivities(
             "The quick brown fox jumps over the lazy dog.",
-            false, false, false
+            false,
+            false,
+            false,
         );
     }
 
@@ -284,35 +302,37 @@ mod tests {
     fn test_borderline_english_like_gibberish() {
         test_with_sensitivities(
             "Rcl maocr otmwi lit dnoen oehc 13 iron seah.",
-            true, false, false  // Medium sensitivity accepts this due to "iron"
+            false,
+            false,
+            true, // Medium sensitivity accepts this due to "iron"
         );
     }
 
     #[test]
     fn test_clear_gibberish_all_sensitivities() {
-        test_with_sensitivities(
-            "!@#$%^&*()",
-            true, true, true
-        );
+        test_with_sensitivities("!@#$%^&*()", true, true, true);
     }
 
     #[test]
     fn test_english_word_with_ngrams() {
-        test_with_sensitivities(
-            "ther with tion",
-            true, false, false
-        );
+        test_with_sensitivities("ther with tion", false, false, true);
     }
 
     // Valid English text tests
     #[test]
     fn test_pangram() {
-        assert!(!is_gibberish("The quick brown fox jumps over the lazy dog.", Sensitivity::Medium));
+        assert!(!is_gibberish(
+            "The quick brown fox jumps over the lazy dog.",
+            Sensitivity::Medium
+        ));
     }
 
     #[test]
     fn test_simple_sentence() {
-        assert!(!is_gibberish("This is a simple English sentence.", Sensitivity::Medium));
+        assert!(!is_gibberish(
+            "This is a simple English sentence.",
+            Sensitivity::Medium
+        ));
     }
 
     #[test]
@@ -332,17 +352,26 @@ mod tests {
 
     #[test]
     fn test_technical_text() {
-        assert!(!is_gibberish("The function returns a boolean value.", Sensitivity::Medium));
+        assert!(!is_gibberish(
+            "The function returns a boolean value.",
+            Sensitivity::Medium
+        ));
     }
 
     #[test]
     fn test_mixed_case() {
-        assert!(!is_gibberish("MiXeD cAsE text IS still English", Sensitivity::Medium));
+        assert!(!is_gibberish(
+            "MiXeD cAsE text IS still English",
+            Sensitivity::Medium
+        ));
     }
 
     #[test]
     fn test_with_punctuation() {
-        assert!(!is_gibberish("Hello! How are you? I'm doing well.", Sensitivity::Medium));
+        assert!(!is_gibberish(
+            "Hello! How are you? I'm doing well.",
+            Sensitivity::Medium
+        ));
     }
 
     #[test]
@@ -404,7 +433,10 @@ mod tests {
 
     #[test]
     fn test_with_numbers() {
-        assert!(!is_gibberish("Room 101 is down the hall", Sensitivity::Medium));
+        assert!(!is_gibberish(
+            "Room 101 is down the hall",
+            Sensitivity::Medium
+        ));
     }
 
     #[test]
@@ -414,18 +446,27 @@ mod tests {
 
     #[test]
     fn test_repeated_word() {
-        assert!(!is_gibberish("buffalo buffalo buffalo", Sensitivity::Medium));
+        assert!(!is_gibberish(
+            "buffalo buffalo buffalo",
+            Sensitivity::Medium
+        ));
     }
 
     // URLs and email addresses
     #[test]
     fn test_url() {
-        assert!(!is_gibberish("Visit https://www.example.com for more info", Sensitivity::Medium));
+        assert!(!is_gibberish(
+            "Visit https://www.example.com for more info",
+            Sensitivity::Medium
+        ));
     }
 
     #[test]
     fn test_email_address() {
-        assert!(!is_gibberish("Contact us at support@example.com", Sensitivity::Medium));
+        assert!(!is_gibberish(
+            "Contact us at support@example.com",
+            Sensitivity::Medium
+        ));
     }
 
     #[test]
@@ -436,7 +477,10 @@ mod tests {
     // Code-like text
     #[test]
     fn test_variable_names() {
-        assert!(is_gibberish("const myVariable = someValue", Sensitivity::Medium));
+        assert!(is_gibberish(
+            "const myVariable = someValue",
+            Sensitivity::Medium
+        ));
     }
 
     #[test]
@@ -447,33 +491,51 @@ mod tests {
     // Mixed language and special cases
     #[test]
     fn test_hashtags() {
-        assert!(!is_gibberish("Great party! #awesome #fun #weekend", Sensitivity::Medium));
+        assert!(!is_gibberish(
+            "Great party! #awesome #fun #weekend",
+            Sensitivity::Medium
+        ));
     }
 
     #[test]
     fn test_emoji_text() {
-        assert!(!is_gibberish("Having fun at the beach 🏖️ with friends 👥", Sensitivity::Medium));
+        assert!(!is_gibberish(
+            "Having fun at the beach 🏖️ with friends 👥",
+            Sensitivity::Medium
+        ));
     }
 
     #[test]
     fn test_mixed_languages() {
-        assert!(!is_gibberish("The sushi 寿司 was delicious", Sensitivity::Medium));
+        assert!(!is_gibberish(
+            "The sushi 寿司 was delicious",
+            Sensitivity::Medium
+        ));
     }
 
     // Technical content
     #[test]
     fn test_scientific_notation() {
-        assert!(!is_gibberish("The speed of light is 3.0 x 10^8 meters per second", Sensitivity::Medium));
+        assert!(!is_gibberish(
+            "The speed of light is 3.0 x 10^8 meters per second",
+            Sensitivity::Medium
+        ));
     }
 
     #[test]
     fn test_chemical_formula() {
-        assert!(!is_gibberish("Water H2O and Carbon Dioxide CO2 are molecules", Sensitivity::Medium));
+        assert!(!is_gibberish(
+            "Water H2O and Carbon Dioxide CO2 are molecules",
+            Sensitivity::Medium
+        ));
     }
 
     #[test]
     fn test_mathematical_expression() {
-        assert!(!is_gibberish("Let x = 2y + 3z where y and z are variables", Sensitivity::Medium));
+        assert!(!is_gibberish(
+            "Let x = 2y + 3z where y and z are variables",
+            Sensitivity::Medium
+        ));
     }
 
     // Creative text formats
@@ -489,13 +551,19 @@ mod tests {
 
     #[test]
     fn test_repeated_punctuation() {
-        assert!(!is_gibberish("Wow!!! This is amazing!!!", Sensitivity::Medium));
+        assert!(!is_gibberish(
+            "Wow!!! This is amazing!!!",
+            Sensitivity::Medium
+        ));
     }
 
     // Edge cases with numbers and symbols
     #[test]
     fn test_phone_number() {
-        assert!(!is_gibberish("Call me at 123-456-7890", Sensitivity::Medium));
+        assert!(!is_gibberish(
+            "Call me at 123-456-7890",
+            Sensitivity::Medium
+        ));
     }
 
     #[test]
@@ -506,28 +574,43 @@ mod tests {
     // Formatting edge cases
     #[test]
     fn test_extra_spaces() {
-        assert!(!is_gibberish("This    has    many    spaces", Sensitivity::Medium));
+        assert!(!is_gibberish(
+            "This    has    many    spaces",
+            Sensitivity::Medium
+        ));
     }
 
     #[test]
     fn test_newlines() {
-        assert!(!is_gibberish("This has\nmultiple\nlines", Sensitivity::Medium));
+        assert!(!is_gibberish(
+            "This has\nmultiple\nlines",
+            Sensitivity::Medium
+        ));
     }
 
     #[test]
     fn test_tabs() {
-        assert!(is_gibberish("Column1\tColumn2\tColumn3", Sensitivity::Medium));
+        assert!(is_gibberish(
+            "Column1\tColumn2\tColumn3",
+            Sensitivity::Medium
+        ));
     }
 
     // Common internet text
     #[test]
     fn test_file_path() {
-        assert!(!is_gibberish("Open C:\\Program Files\\App\\config.txt", Sensitivity::Medium));
+        assert!(!is_gibberish(
+            "Open C:\\Program Files\\App\\config.txt",
+            Sensitivity::Medium
+        ));
     }
 
     #[test]
     fn test_html_tags() {
-        assert!(!is_gibberish("<div class=\"container\">", Sensitivity::Medium));
+        assert!(!is_gibberish(
+            "<div class=\"container\">",
+            Sensitivity::Medium
+        ));
     }
 
     #[test]
@@ -537,7 +620,10 @@ mod tests {
 
     #[test]
     fn test_base64_description() {
-        assert!(!is_gibberish("Multiple base64 encodings", Sensitivity::Medium));
+        assert!(!is_gibberish(
+            "Multiple base64 encodings",
+            Sensitivity::Medium
+        ));
     }
 
     // Common passwords and usernames
@@ -575,55 +661,73 @@ mod tests {
     fn test_password_numbers() {
         assert!(!is_gibberish("11111111", Sensitivity::Medium));
     }
-    
+
     // Tests for strings that should be detected as gibberish
     // These are from failed decoder tests in another project
-    
+
     #[test]
     fn test_scrambled_words_gibberish1() {
         // Contains enough English-like patterns to pass medium sensitivity
-        assert!(!is_gibberish("Aiees Orttaster! Netts'e t ter oe es ntenoo", Sensitivity::Medium));
+        assert!(!is_gibberish(
+            "Aiees Orttaster! Netts'e t ter oe es ntenoo",
+            Sensitivity::Medium
+        ));
     }
-    
+
     #[test]
     fn test_scrambled_words_gibberish2() {
         // Contains "iron" which is an English word, so passes medium sensitivity
-        assert!(!is_gibberish("Rcl maocr otmwi lit dnoen oehc 13 iron seah.", Sensitivity::Medium));
+        assert!(!is_gibberish(
+            "Rcl maocr otmwi lit dnoen oehc 13 iron seah.",
+            Sensitivity::Medium
+        ));
     }
-    
+
     #[test]
     fn test_rot47_gibberish() {
-        assert!(is_gibberish("'D<=BL C: 6@57? EI5FHN^ >I8;9 AM JCK", Sensitivity::Medium));
+        assert!(is_gibberish(
+            "'D<=BL C: 6@57? EI5FHN^ >I8;9 AM JCK",
+            Sensitivity::Medium
+        ));
     }
-    
+
     #[test]
     fn test_binary_decoder_gibberish1() {
         assert!(is_gibberish("\u{3} \u{e}@:\u{1}`\u{7}\u{18}\u{e}@/\u{1}<\u{e}p;An\u{2}p\u{19}`o\u{3}<\u{c}p6\u{1}J\u{2}p\u{18}`o\u{3}\r", Sensitivity::Medium));
     }
-    
+
     #[test]
     fn test_railfence_gibberish() {
-        assert!(is_gibberish("xgcyzw Snh fabkqta,jedm ioopl  uru v", Sensitivity::Medium));
+        assert!(is_gibberish(
+            "xgcyzw Snh fabkqta,jedm ioopl  uru v",
+            Sensitivity::Medium
+        ));
     }
-    
+
     #[test]
     fn test_binary_decoder_gibberish2() {
         assert!(is_gibberish("\0*\0\u{1a}\0\r\u{10}\u{7}\u{18}\u{1}\0\u{1}R\0s\0\u{10}\0\u{18}`\rp\u{6}p\u{3}X\u{1}^\0l\0:@\u{1d}\0\u{c}P\u{6} \u{1}\u{e}", Sensitivity::Medium));
     }
-    
+
     #[test]
     fn test_astar_gibberish() {
         assert!(is_gibberish(")W?:!|.b", Sensitivity::Medium));
     }
-    
+
     #[test]
     fn test_railfence_gibberish2() {
-        assert!(is_gibberish("x,jecmdizo l  orn pg y waSuhkfubtqva", Sensitivity::Medium));
+        assert!(is_gibberish(
+            "x,jecmdizo l  orn pg y waSuhkfubtqva",
+            Sensitivity::Medium
+        ));
     }
 
     #[test]
     #[ignore]
     fn test_mixed_numbers_letters_gibberish() {
-        assert!(is_gibberish("y z  12 2 0 4 f\na03  1  4f rea'", Sensitivity::Medium));
+        assert!(is_gibberish(
+            "y z  12 2 0 4 f\na03  1  4f rea'",
+            Sensitivity::Medium
+        ));
     }
 }

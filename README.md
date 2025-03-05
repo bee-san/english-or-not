@@ -70,7 +70,7 @@ Our advanced detection algorithm uses three main components:
 
 The library provides three sensitivity levels to fine-tune gibberish detection:
 
-### Low Sensitivity
+### High Sensitivity
 - Most strict classification
 - Requires very high confidence to classify text as English
 - Best for detecting texts that appear English-like but are actually gibberish
@@ -88,7 +88,7 @@ The library provides three sensitivity levels to fine-tune gibberish detection:
   - 1 English word: Needs >15% trigram or >10% quadgram match
   - No English words: Needs >10% trigram or >5% quadgram match
 
-### High Sensitivity
+### Low Sensitivity
 - Most lenient classification
 - Favors classifying text as English
 - Best when input is mostly gibberish and any English-like patterns are significant
@@ -103,9 +103,9 @@ use gibberish_or_not::{is_gibberish, Sensitivity};
 let text = "Rcl maocr otmwi lit dnoen oehc 13 iron seah.";
 
 // Different results based on sensitivity
-assert!(is_gibberish(text, Sensitivity::Low));    // Classified as gibberish
+assert!(is_gibberish(text, Sensitivity::High));    // Classified as gibberish
 assert!(!is_gibberish(text, Sensitivity::Medium)); // Classified as English
-assert!(!is_gibberish(text, Sensitivity::High));   // Classified as English
+assert!(!is_gibberish(text, Sensitivity::Low));   // Classified as English
 ```
 
 ## 🔑 Password Detection

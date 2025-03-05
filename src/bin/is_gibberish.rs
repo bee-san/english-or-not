@@ -1,5 +1,5 @@
-use std::env;
 use gibberish_or_not::{is_gibberish, Sensitivity};
+use std::env;
 
 fn print_usage(program: &str) {
     eprintln!("Usage: {} <text> [sensitivity]", program);
@@ -9,13 +9,13 @@ fn print_usage(program: &str) {
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    
+
     if args.len() < 2 || args.len() > 3 {
         print_usage(&args[0]);
     }
 
     let text = &args[1];
-    
+
     // Parse sensitivity level, defaulting to low
     let sensitivity = if args.len() == 3 {
         match args[2].to_lowercase().as_str() {
