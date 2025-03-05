@@ -1553,4 +1553,39 @@ mod tests {
         assert!(!is_gibberish(text, Sensitivity::High));
         // HIGH sensitivity correctly identifies as ENGLISH due to presence of English word
     }
+
+    #[test]
+    fn test_gibberish_string_1() {
+        assert!(is_gibberish("eoam sot tae hdeoeneieaoe slh o acihihhtccho ", Sensitivity::Low));
+    }
+
+    #[test]
+    fn test_gibberish_string_2() {
+        assert!(is_gibberish("hhhichet otma otaieo eds ee oanhos eo accelhi", Sensitivity::Low));
+    }
+
+    #[test]
+    fn test_gibberish_string_3() {
+        assert!(is_gibberish("hhichet otma otaieo eds ee oanhos eo accelhih", Sensitivity::Low));
+    }
+
+    #[test]
+    fn test_gibberish_string_4() {
+        assert!(is_gibberish("oeo hoe h aatec nstlsiahoch ace hhmdeioti eeo", Sensitivity::Low));
+    }
+
+    #[test]
+    fn test_gibberish_string_5() {
+        assert!(is_gibberish("hotet ma oto aseediheooe eas oie  lahchichcnh", Sensitivity::Low));
+    }
+
+    #[test]
+    fn test_gibberish_string_6() {
+        assert!(is_gibberish("otet ma oto aseediheooe eas oie  lahchichcnhh", Sensitivity::Low));
+    }
+
+    #[test]
+    fn test_gibberish_string_7() {
+        assert!(is_gibberish(" ehe o mldhe t otecoheioeaiosaaaconsh thiehc ", Sensitivity::Low));
+    }
 }
