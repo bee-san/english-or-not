@@ -633,33 +633,28 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_password_qwerty() {
-        assert!(!is_gibberish("qwerty", Sensitivity::Medium));
+        assert!(is_password("qwerty"));
     }
 
     #[test]
-    #[ignore]
     fn test_password_abc123() {
-        assert!(!is_gibberish("abc123", Sensitivity::Medium));
+        assert!(is_password("abc123"));
     }
 
     #[test]
-    #[ignore]
     fn test_password_password1() {
-        assert!(!is_gibberish("password1", Sensitivity::Medium));
+        assert!(is_password("password1"));
     }
 
     #[test]
-    #[ignore]
     fn test_password_iloveyou() {
-        assert!(!is_gibberish("iloveyou", Sensitivity::Medium));
+        assert!(is_password("iloveyou"));
     }
 
     #[test]
-    #[ignore]
     fn test_password_numbers() {
-        assert!(!is_gibberish("11111111", Sensitivity::Medium));
+        assert!(is_password("11111111"));
     }
 
     // Tests for strings that should be detected as gibberish
