@@ -3,7 +3,7 @@ use std::env;
 
 fn print_usage(program: &str) {
     eprintln!("Usage: {} <text> [sensitivity]", program);
-    eprintln!("  sensitivity: low (default), medium, high");
+    eprintln!("  sensitivity: low (strict), medium, high (lenient, default)");
     std::process::exit(1);
 }
 
@@ -16,7 +16,7 @@ fn main() {
 
     let text = &args[1];
 
-    // Parse sensitivity level, defaulting to low
+    // Parse sensitivity level, defaulting to high (lenient)
     let sensitivity = if args.len() == 3 {
         match args[2].to_lowercase().as_str() {
             "low" => Sensitivity::Low,
@@ -29,7 +29,7 @@ fn main() {
             }
         }
     } else {
-        Sensitivity::Low
+        Sensitivity::High
     };
 
     if is_gibberish(text, sensitivity) {

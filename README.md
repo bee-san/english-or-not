@@ -70,16 +70,18 @@ Our advanced detection algorithm uses three main components:
 
 The library provides three sensitivity levels to fine-tune gibberish detection:
 
-### High Sensitivity
+### Low Sensitivity (Not Very Sensitive to English)
 - Most strict classification
 - Requires very high confidence to classify text as English
 - Best for detecting texts that appear English-like but are actually gibberish
 - Thresholds:
   - 2+ English words: Needs >20% trigram/quadgram match
   - 1 English word: Needs >25% trigram/quadgram match
-  - No English words: Always classified as gibberish
+  - No English words: Almost always classified as gibberish
+- Use when: You want to minimize false negatives (gibberish classified as English)
+- Example: Security applications where any potential gibberish should be flagged
 
-### Medium Sensitivity (Default)
+### Medium Sensitivity (Balanced)
 - Balanced approach for general use
 - Combines dictionary and n-gram analysis
 - Default mode suitable for most applications
@@ -87,14 +89,22 @@ The library provides three sensitivity levels to fine-tune gibberish detection:
   - 2+ English words: Automatically classified as English
   - 1 English word: Needs >15% trigram or >10% quadgram match
   - No English words: Needs >10% trigram or >5% quadgram match
+- Use when: You want a balanced approach for general text classification
+- Example: Content filtering, general text analysis
 
-### Low Sensitivity
+### High Sensitivity (Very Sensitive to English)
 - Most lenient classification
 - Favors classifying text as English
 - Best when input is mostly gibberish and any English-like patterns are significant
 - Thresholds:
   - Any English word: Automatically classified as English
   - No English words: Needs >5% trigram or >3% quadgram match
+- Use when: You want to minimize false positives (English classified as gibberish)
+- Example: When processing user input where you want to accept anything remotely English-like
+
+> **Note on Sensitivity**: Think of sensitivity as how sensitive the detector is to English words. 
+> High sensitivity means it's very sensitive to English (easily detects English), while 
+> Low sensitivity means it's not very sensitive to English (requires more evidence to classify as English).
 
 ```rust
 use gibberish_or_not::{is_gibberish, Sensitivity};
@@ -103,9 +113,9 @@ use gibberish_or_not::{is_gibberish, Sensitivity};
 let text = "Rcl maocr otmwi lit dnoen oehc 13 iron seah.";
 
 // Different results based on sensitivity
-assert!(is_gibberish(text, Sensitivity::High));    // Classified as gibberish
+assert!(is_gibberish(text, Sensitivity::Low));     // Classified as gibberish (strict)
 assert!(!is_gibberish(text, Sensitivity::Medium)); // Classified as English
-assert!(!is_gibberish(text, Sensitivity::Low));   // Classified as English
+assert!(!is_gibberish(text, Sensitivity::High));    // Classified as English (lenient)
 ```
 
 ## 🔑 Password Detection
