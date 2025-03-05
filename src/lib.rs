@@ -725,4 +725,25 @@ mod tests {
             Sensitivity::Medium
         ));
     }
+
+    #[test]
+    fn test_sensitivity_level_behavior() {
+        // This test ensures we never confuse the sensitivity levels again
+        // by explicitly testing their behavior on a borderline case
+        
+        // A text with one English word and some gibberish
+        let borderline_text = "Rcl maocr otmwi lit dnoen oehc 13 iron seah.";
+        
+        // High sensitivity (strict): Should classify as gibberish
+        assert!(is_gibberish(borderline_text, Sensitivity::High), 
+            "High sensitivity should classify borderline text as gibberish");
+        
+        // Medium sensitivity (balanced): Should classify as English due to "iron"
+        assert!(!is_gibberish(borderline_text, Sensitivity::Medium), 
+            "Medium sensitivity should classify borderline text as English");
+        
+        // Low sensitivity (lenient): Should classify as English
+        assert!(!is_gibberish(borderline_text, Sensitivity::Low), 
+            "Low sensitivity should classify borderline text as English");
+    }
 }
