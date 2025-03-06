@@ -100,7 +100,7 @@ pub fn is_gibberish(text: &str, sensitivity: Sensitivity) -> bool {
 
     // Count English words
     let english_word_count = words.iter().filter(|word| is_english_word(word)).count();
-    
+
     let english_word_ratio = if words.is_empty() {
         0.0
     } else {
@@ -120,13 +120,13 @@ pub fn is_gibberish(text: &str, sensitivity: Sensitivity) -> bool {
 
     // Calculate character entropy - gibberish often has unusual character distributions
     let entropy = calculate_entropy(text);
-    
+
     // Calculate character transition probability - English has predictable transitions
     let transition_score = calculate_transition_score(text);
-    
+
     // Calculate vowel-consonant ratio - English has a fairly consistent ratio
     let vowel_consonant_ratio = calculate_vowel_consonant_ratio(&cleaned);
-    
+
     // Proceed with trigram/quadgram analysis (but with less weight)
     let trigrams = generate_ngrams(&cleaned, 3);
     let quadgrams = generate_ngrams(&cleaned, 4);
@@ -157,19 +157,23 @@ pub fn is_gibberish(text: &str, sensitivity: Sensitivity) -> bool {
     // Calculate a composite score that combines multiple metrics
     // This makes the algorithm more robust than relying heavily on n-grams
     let mut composite_score = 0.0;
-    
+
     // English word ratio has high weight
     composite_score += english_word_ratio * 0.4;
-    
+
     // Transition probability has medium weight
     composite_score += transition_score * 0.25;
-    
+
     // N-gram scores have lower weight
     composite_score += trigram_score * 0.15;
     composite_score += quadgram_score * 0.1;
-    
+
     // Vowel-consonant ratio has low weight
-    composite_score += if (0.3..=0.7).contains(&vowel_consonant_ratio) { 0.1 } else { 0.0 };
+    composite_score += if (0.3..=0.7).contains(&vowel_consonant_ratio) {
+        0.1
+    } else {
+        0.0
+    };
 
     // Adjust thresholds based on text length
     let length_factor = match cleaned.len() {
@@ -182,28 +186,28 @@ pub fn is_gibberish(text: &str, sensitivity: Sensitivity) -> bool {
 
     // Decision thresholds based on sensitivity
     let threshold = match sensitivity {
-        Sensitivity::Low => 0.35 * length_factor,    // Stricter - needs more evidence to be English
+        Sensitivity::Low => 0.35 * length_factor, // Stricter - needs more evidence to be English
         Sensitivity::Medium => 0.25 * length_factor, // Balanced
-        Sensitivity::High => 0.15 * length_factor,   // Lenient - less evidence needed to be English
+        Sensitivity::High => 0.15 * length_factor, // Lenient - less evidence needed to be English
     };
 
     // Special cases that override the composite score
-    
+
     // If almost all words are English, it's definitely English
     if english_word_ratio > 0.8 {
         return false;
     }
-    
+
     // If we have multiple English words, it's likely English
     if english_word_count >= 3 && sensitivity != Sensitivity::Low {
         return false;
     }
-    
+
     // If we have no English words and poor transition score, it's likely gibberish
     if english_word_count == 0 && transition_score < 0.3 && sensitivity != Sensitivity::High {
         return true;
     }
-    
+
     // For the remaining cases, use the composite score
     composite_score < threshold
 }
@@ -212,24 +216,24 @@ pub fn is_gibberish(text: &str, sensitivity: Sensitivity) -> bool {
 fn calculate_entropy(text: &str) -> f64 {
     let text = text.to_lowercase();
     let total_chars = text.chars().count() as f64;
-    
+
     if total_chars == 0.0 {
         return 0.0;
     }
-    
+
     // Count character frequencies
     let mut char_counts = std::collections::HashMap::new();
     for c in text.chars() {
         *char_counts.entry(c).or_insert(0) += 1;
     }
-    
+
     // Calculate entropy
     let mut entropy = 0.0;
     for &count in char_counts.values() {
         let probability = count as f64 / total_chars;
         entropy -= probability * probability.log2();
     }
-    
+
     // Normalize to 0-1 range (typical English text has entropy around 4.0-4.5)
     (entropy / 5.0).min(1.0)
 }
@@ -238,21 +242,21 @@ fn calculate_entropy(text: &str) -> f64 {
 fn calculate_transition_score(text: &str) -> f64 {
     let text = text.to_lowercase();
     let chars: Vec<char> = text.chars().collect();
-    
+
     if chars.len() < 2 {
         return 0.0;
     }
-    
+
     let mut valid_transitions = 0;
     let total_transitions = chars.len() - 1;
-    
+
     for i in 0..total_transitions {
-        let pair = format!("{}{}", chars[i], chars[i+1]);
+        let pair = format!("{}{}", chars[i], chars[i + 1]);
         if COMMON_CHAR_PAIRS.contains(&pair.as_str()) {
             valid_transitions += 1;
         }
     }
-    
+
     valid_transitions as f64 / total_transitions as f64
 }
 
@@ -261,7 +265,7 @@ fn calculate_vowel_consonant_ratio(text: &str) -> f64 {
     let vowels = ['a', 'e', 'i', 'o', 'u'];
     let mut vowel_count = 0;
     let mut consonant_count = 0;
-    
+
     for c in text.chars() {
         if vowels.contains(&c) {
             vowel_count += 1;
@@ -269,20 +273,20 @@ fn calculate_vowel_consonant_ratio(text: &str) -> f64 {
             consonant_count += 1;
         }
     }
-    
+
     if consonant_count == 0 {
         return if vowel_count == 0 { 0.0 } else { 1.0 };
     }
-    
+
     vowel_count as f64 / (vowel_count + consonant_count) as f64
 }
 
 // Common character pairs in English
 static COMMON_CHAR_PAIRS: phf::Set<&'static str> = phf_set! {
-    "th", "he", "in", "er", "an", "re", "on", "at", "en", "nd", 
-    "ti", "es", "or", "te", "of", "ed", "is", "it", "al", "ar", 
-    "st", "to", "nt", "ng", "se", "ha", "as", "ou", "io", "le", 
-    "ve", "co", "me", "de", "hi", "ri", "ro", "ic", "ne", "ea", 
+    "th", "he", "in", "er", "an", "re", "on", "at", "en", "nd",
+    "ti", "es", "or", "te", "of", "ed", "is", "it", "al", "ar",
+    "st", "to", "nt", "ng", "se", "ha", "as", "ou", "io", "le",
+    "ve", "co", "me", "de", "hi", "ri", "ro", "ic", "ne", "ea",
     "ra", "ce", "li", "ch", "ll", "be", "ma", "si", "om", "ur"
 };
 
@@ -515,7 +519,10 @@ mod tests {
 
         println!("\n== Test Assertion ==");
         println!("Should classify as GIBBERISH with LOW sensitivity");
-        assert!(!is_gibberish(text, Sensitivity::Low), "Text with common n-grams should not be classified as gibberish with low sensitivity");
+        assert!(
+            !is_gibberish(text, Sensitivity::Low),
+            "Text with common n-grams should not be classified as gibberish with low sensitivity"
+        );
     }
 
     // Valid English text tests
@@ -688,10 +695,12 @@ mod tests {
         println!("Cleaned text length: {}", cleaned.len());
 
         // Debug character distribution
-        let char_counts = text.chars().fold(std::collections::HashMap::new(), |mut map, c| {
-            *map.entry(c).or_insert(0) += 1;
-            map
-        });
+        let char_counts = text
+            .chars()
+            .fold(std::collections::HashMap::new(), |mut map, c| {
+                *map.entry(c).or_insert(0) += 1;
+                map
+            });
         println!("\n== CHARACTER DISTRIBUTION ==");
         println!("Unique characters: {}", char_counts.len());
         for (c, count) in char_counts.iter() {
@@ -708,21 +717,28 @@ mod tests {
         let transition_score = calculate_transition_score(text);
         println!("\n== TRANSITION SCORE ANALYSIS ==");
         println!("Transition score: {:.4}", transition_score);
-        
+
         // Debug character transitions
         let chars: Vec<char> = text.to_lowercase().chars().collect();
         println!("Character transitions:");
         for i in 0..(chars.len() - 1) {
-            let pair = format!("{}{}", chars[i], chars[i+1]);
+            let pair = format!("{}{}", chars[i], chars[i + 1]);
             let is_common = COMMON_CHAR_PAIRS.contains(&pair.as_str());
-            println!("  '{}' - {}", pair, if is_common { "COMMON" } else { "uncommon" });
+            println!(
+                "  '{}' - {}",
+                pair,
+                if is_common { "COMMON" } else { "uncommon" }
+            );
         }
 
         // Debug vowel-consonant ratio
         let vowel_consonant_ratio = calculate_vowel_consonant_ratio(&cleaned);
         println!("\n== VOWEL-CONSONANT ANALYSIS ==");
         println!("Vowel-consonant ratio: {:.4}", vowel_consonant_ratio);
-        println!("In typical English range (0.3-0.7): {}", (0.3..=0.7).contains(&vowel_consonant_ratio));
+        println!(
+            "In typical English range (0.3-0.7): {}",
+            (0.3..=0.7).contains(&vowel_consonant_ratio)
+        );
 
         // Split into words and check each one
         let words: Vec<&str> = cleaned
@@ -740,16 +756,28 @@ mod tests {
             if is_english {
                 english_word_count += 1;
             }
-            println!("  \"{}\" - {}", word, if is_english { "ENGLISH WORD" } else { "not English" });
+            println!(
+                "  \"{}\" - {}",
+                word,
+                if is_english {
+                    "ENGLISH WORD"
+                } else {
+                    "not English"
+                }
+            );
         }
 
         println!(
             "English words found: {} out of {} ({:.2}%)",
             english_word_count,
             words.len(),
-            if words.is_empty() { 0.0 } else { english_word_count as f64 / words.len() as f64 * 100.0 }
+            if words.is_empty() {
+                0.0
+            } else {
+                english_word_count as f64 / words.len() as f64 * 100.0
+            }
         );
-        
+
         let english_word_ratio = if words.is_empty() {
             0.0
         } else {
@@ -788,9 +816,18 @@ mod tests {
         println!("All trigrams:");
         for trigram in &trigrams {
             let is_common = COMMON_TRIGRAMS.contains(trigram.as_str());
-            println!("  \"{}\" - {}", trigram, if is_common { "COMMON" } else { "uncommon" });
+            println!(
+                "  \"{}\" - {}",
+                trigram,
+                if is_common { "COMMON" } else { "uncommon" }
+            );
         }
-        println!("Valid trigrams: {}/{} = {:.4}", valid_trigrams.len(), trigrams.len(), trigram_score);
+        println!(
+            "Valid trigrams: {}/{} = {:.4}",
+            valid_trigrams.len(),
+            trigrams.len(),
+            trigram_score
+        );
         println!("Trigram score: {:.4}", trigram_score);
         println!("Trigram threshold check (> 0.15): {}", trigram_score > 0.15);
         println!("Trigram threshold check (> 0.1): {}", trigram_score > 0.1);
@@ -800,12 +837,24 @@ mod tests {
         println!("All quadgrams:");
         for quadgram in &quadgrams {
             let is_common = COMMON_QUADGRAMS.contains(quadgram.as_str());
-            println!("  \"{}\" - {}", quadgram, if is_common { "COMMON" } else { "uncommon" });
+            println!(
+                "  \"{}\" - {}",
+                quadgram,
+                if is_common { "COMMON" } else { "uncommon" }
+            );
         }
-        println!("Valid quadgrams: {}/{} = {:.4}", valid_quadgrams.len(), quadgrams.len(), quadgram_score);
+        println!(
+            "Valid quadgrams: {}/{} = {:.4}",
+            valid_quadgrams.len(),
+            quadgrams.len(),
+            quadgram_score
+        );
         println!("Quadgram score: {:.4}", quadgram_score);
         println!("Quadgram threshold check (> 0.1): {}", quadgram_score > 0.1);
-        println!("Quadgram threshold check (> 0.05): {}", quadgram_score > 0.05);
+        println!(
+            "Quadgram threshold check (> 0.05): {}",
+            quadgram_score > 0.05
+        );
 
         // Calculate composite score
         let mut composite_score = 0.0;
@@ -813,16 +862,46 @@ mod tests {
         composite_score += transition_score * 0.25;
         composite_score += trigram_score * 0.15;
         composite_score += quadgram_score * 0.1;
-        composite_score += if (0.3..=0.7).contains(&vowel_consonant_ratio) { 0.1 } else { 0.0 };
+        composite_score += if (0.3..=0.7).contains(&vowel_consonant_ratio) {
+            0.1
+        } else {
+            0.0
+        };
 
         println!("\n== COMPOSITE SCORE CALCULATION ==");
-        println!("English word ratio component: {:.4} * 0.4 = {:.4}", english_word_ratio, english_word_ratio * 0.4);
-        println!("Transition score component: {:.4} * 0.25 = {:.4}", transition_score, transition_score * 0.25);
-        println!("Trigram score component: {:.4} * 0.15 = {:.4}", trigram_score, trigram_score * 0.15);
-        println!("Quadgram score component: {:.4} * 0.1 = {:.4}", quadgram_score, quadgram_score * 0.1);
-        println!("Vowel-consonant ratio component: {} * 0.1 = {:.4}", 
-            if (0.3..=0.7).contains(&vowel_consonant_ratio) { 1.0 } else { 0.0 },
-            if (0.3..=0.7).contains(&vowel_consonant_ratio) { 0.1 } else { 0.0 });
+        println!(
+            "English word ratio component: {:.4} * 0.4 = {:.4}",
+            english_word_ratio,
+            english_word_ratio * 0.4
+        );
+        println!(
+            "Transition score component: {:.4} * 0.25 = {:.4}",
+            transition_score,
+            transition_score * 0.25
+        );
+        println!(
+            "Trigram score component: {:.4} * 0.15 = {:.4}",
+            trigram_score,
+            trigram_score * 0.15
+        );
+        println!(
+            "Quadgram score component: {:.4} * 0.1 = {:.4}",
+            quadgram_score,
+            quadgram_score * 0.1
+        );
+        println!(
+            "Vowel-consonant ratio component: {} * 0.1 = {:.4}",
+            if (0.3..=0.7).contains(&vowel_consonant_ratio) {
+                1.0
+            } else {
+                0.0
+            },
+            if (0.3..=0.7).contains(&vowel_consonant_ratio) {
+                0.1
+            } else {
+                0.0
+            }
+        );
         println!("Composite score: {:.4}", composite_score);
 
         // Length factor calculation
@@ -833,23 +912,39 @@ mod tests {
             101..=200 => 1.0, // Standard threshold
             _ => 1.1,         // Long text can be more lenient
         };
-        println!("Length factor (based on {} chars): {:.2}", cleaned.len(), length_factor);
+        println!(
+            "Length factor (based on {} chars): {:.2}",
+            cleaned.len(),
+            length_factor
+        );
 
         // Threshold calculations
         let low_threshold = 0.35 * length_factor;
         let medium_threshold = 0.25 * length_factor;
         let high_threshold = 0.15 * length_factor;
-        
+
         println!("\n== SENSITIVITY THRESHOLDS ==");
         println!("Low sensitivity threshold: {:.4}", low_threshold);
         println!("Medium sensitivity threshold: {:.4}", medium_threshold);
         println!("High sensitivity threshold: {:.4}", high_threshold);
-        println!("Composite score < Low threshold: {}", composite_score < low_threshold);
-        println!("Composite score < Medium threshold: {}", composite_score < medium_threshold);
-        println!("Composite score < High threshold: {}", composite_score < high_threshold);
+        println!(
+            "Composite score < Low threshold: {}",
+            composite_score < low_threshold
+        );
+        println!(
+            "Composite score < Medium threshold: {}",
+            composite_score < medium_threshold
+        );
+        println!(
+            "Composite score < High threshold: {}",
+            composite_score < high_threshold
+        );
 
         println!("\n== SPECIAL CASE CHECKS ==");
-        println!("English word ratio > 0.8: {} (returns NOT gibberish if true)", english_word_ratio > 0.8);
+        println!(
+            "English word ratio > 0.8: {} (returns NOT gibberish if true)",
+            english_word_ratio > 0.8
+        );
         println!("English word count >= 3: {} (returns NOT gibberish if true for Medium/High sensitivity)", english_word_count >= 3);
         println!("No English words AND transition score < 0.3: {} (returns gibberish if true for Low/Medium sensitivity)", 
             english_word_count == 0 && transition_score < 0.3);
@@ -859,15 +954,31 @@ mod tests {
         let low_result = is_gibberish(text, Sensitivity::Low);
         let medium_result = is_gibberish(text, Sensitivity::Medium);
         let high_result = is_gibberish(text, Sensitivity::High);
-        
-        println!("Low sensitivity result: {}", if low_result { "GIBBERISH" } else { "ENGLISH" });
-        println!("Medium sensitivity result: {}", if medium_result { "GIBBERISH" } else { "ENGLISH" });
-        println!("High sensitivity result: {}", if high_result { "GIBBERISH" } else { "ENGLISH" });
+
+        println!(
+            "Low sensitivity result: {}",
+            if low_result { "GIBBERISH" } else { "ENGLISH" }
+        );
+        println!(
+            "Medium sensitivity result: {}",
+            if medium_result {
+                "GIBBERISH"
+            } else {
+                "ENGLISH"
+            }
+        );
+        println!(
+            "High sensitivity result: {}",
+            if high_result { "GIBBERISH" } else { "ENGLISH" }
+        );
 
         println!("\n== EXPECTED RESULT ==");
         println!("Expected Medium sensitivity result: GIBBERISH");
 
-        assert!(is_gibberish(text, Sensitivity::Medium), "Code snippets should be classified as gibberish with medium sensitivity");
+        assert!(
+            is_gibberish(text, Sensitivity::Medium),
+            "Code snippets should be classified as gibberish with medium sensitivity"
+        );
     }
 
     // Mixed language and special cases
@@ -1013,14 +1124,26 @@ mod tests {
             if is_english {
                 english_word_count += 1;
             }
-            println!("  \"{}\" - {}", word, if is_english { "ENGLISH WORD" } else { "not English" });
+            println!(
+                "  \"{}\" - {}",
+                word,
+                if is_english {
+                    "ENGLISH WORD"
+                } else {
+                    "not English"
+                }
+            );
         }
 
         println!(
             "English words found: {} out of {} ({:.2}%)",
             english_word_count,
             words.len(),
-            if words.is_empty() { 0.0 } else { english_word_count as f64 / words.len() as f64 * 100.0 }
+            if words.is_empty() {
+                0.0
+            } else {
+                english_word_count as f64 / words.len() as f64 * 100.0
+            }
         );
 
         // Check n-grams
@@ -1054,7 +1177,11 @@ mod tests {
         println!("All trigrams:");
         for trigram in &trigrams {
             let is_common = COMMON_TRIGRAMS.contains(trigram.as_str());
-            println!("  \"{}\" - {}", trigram, if is_common { "COMMON" } else { "uncommon" });
+            println!(
+                "  \"{}\" - {}",
+                trigram,
+                if is_common { "COMMON" } else { "uncommon" }
+            );
         }
         println!("Trigram score: {:.3}", trigram_score);
 
@@ -1063,7 +1190,11 @@ mod tests {
         println!("All quadgrams:");
         for quadgram in &quadgrams {
             let is_common = COMMON_QUADGRAMS.contains(quadgram.as_str());
-            println!("  \"{}\" - {}", quadgram, if is_common { "COMMON" } else { "uncommon" });
+            println!(
+                "  \"{}\" - {}",
+                quadgram,
+                if is_common { "COMMON" } else { "uncommon" }
+            );
         }
         println!("Quadgram score: {:.3}", quadgram_score);
 
@@ -1095,7 +1226,10 @@ mod tests {
         println!("Suspicious pattern: {}", suspicious_trigram_pattern);
 
         if english_word_ratio > 0.8 {
-            println!("Case 1: english_word_ratio > 0.8 = {}", english_word_ratio > 0.8);
+            println!(
+                "Case 1: english_word_ratio > 0.8 = {}",
+                english_word_ratio > 0.8
+            );
         } else if english_word_count >= 3 {
             let decision = trigram_score <= 0.2 && quadgram_score <= 0.2;
             println!("Case 2: english_word_count >= 3");
@@ -1113,9 +1247,15 @@ mod tests {
         }
 
         let result = is_gibberish(text, Sensitivity::Low);
-        println!("\nFinal result: {}", if result { "GIBBERISH" } else { "ENGLISH" });
+        println!(
+            "\nFinal result: {}",
+            if result { "GIBBERISH" } else { "ENGLISH" }
+        );
 
-        assert!(!result, "This valid English text was incorrectly classified as gibberish");
+        assert!(
+            !result,
+            "This valid English text was incorrectly classified as gibberish"
+        );
     }
 
     #[test]
@@ -1130,7 +1270,11 @@ mod tests {
 
         println!("\n== Word Analysis ==");
         println!("Total words: {}", words.len());
-        println!("English words: {} ({:?})", english_words.len(), english_words);
+        println!(
+            "English words: {} ({:?})",
+            english_words.len(),
+            english_words
+        );
 
         let trigrams = generate_ngrams(&cleaned, 3);
         let quadgrams = generate_ngrams(&cleaned, 4);
@@ -1169,7 +1313,10 @@ mod tests {
     #[test]
     fn test_gibberish_string_9() {
         let text = "xyz abc def ghi";
-        assert!(!is_gibberish(text, Sensitivity::High), "Simple letter sequences should not be classified as gibberish with high sensitivity");
+        assert!(
+            !is_gibberish(text, Sensitivity::High),
+            "Simple letter sequences should not be classified as gibberish with high sensitivity"
+        );
     }
 
     #[test]
@@ -1220,7 +1367,11 @@ mod tests {
 
         println!("\n== Word Analysis ==");
         println!("Total words: {}", words.len());
-        println!("English words: {} ({:?})", english_words.len(), english_words);
+        println!(
+            "English words: {} ({:?})",
+            english_words.len(),
+            english_words
+        );
 
         let trigrams = generate_ngrams(&cleaned, 3);
         let quadgrams = generate_ngrams(&cleaned, 4);
@@ -1268,7 +1419,11 @@ mod tests {
 
         println!("\n== Word Analysis ==");
         println!("Total words: {}", words.len());
-        println!("English words: {} ({:?})", english_words.len(), english_words);
+        println!(
+            "English words: {} ({:?})",
+            english_words.len(),
+            english_words
+        );
 
         let trigrams = generate_ngrams(&cleaned, 3);
         let quadgrams = generate_ngrams(&cleaned, 4);
@@ -1301,7 +1456,10 @@ mod tests {
             }
         );
 
-        assert!(!is_gibberish(text, Sensitivity::High), "Scrambled English words should not be classified as gibberish with high sensitivity");
+        assert!(
+            !is_gibberish(text, Sensitivity::High),
+            "Scrambled English words should not be classified as gibberish with high sensitivity"
+        );
     }
 
     #[test]
@@ -1316,7 +1474,11 @@ mod tests {
 
         println!("\n== Word Analysis ==");
         println!("Total words: {}", words.len());
-        println!("English words: {} ({:?})", english_words.len(), english_words);
+        println!(
+            "English words: {} ({:?})",
+            english_words.len(),
+            english_words
+        );
 
         let trigrams = generate_ngrams(&cleaned, 3);
         let quadgrams = generate_ngrams(&cleaned, 4);
