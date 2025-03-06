@@ -117,6 +117,95 @@ The library handles various special cases:
 - ASCII art is detected as gibberish
 - Common internet text patterns are recognized
 
+## 🧮 Algorithm Deep Dive
+
+The gibberish detection algorithm combines multiple scoring components into a weighted composite score. Here's a detailed look at each component:
+
+### Composite Score Formula
+
+The final classification uses a weighted sum:
+
+$S = 0.4E + 0.25T + 0.15G_3 + 0.1G_4 + 0.1V$
+
+Where:
+- $E$ = English word ratio
+- $T$ = Character transition probability
+- $G_3$ = Trigram score
+- $G_4$ = Quadgram score
+- $V$ = Vowel-consonant ratio (binary: 1 if in range [0.3, 0.7], 0 otherwise)
+
+### Length-Based Threshold Adjustment
+
+The threshold is dynamically adjusted based on text length:
+
+```rust
+let threshold = match text_length {
+    0..=20  => 0.7,  // Very short text needs higher threshold
+    21..=50 => 0.8,  // Short text
+    51..=100 => 0.9, // Medium text
+    101..=200 => 1.0,// Standard threshold
+    _ => 1.1,        // Long text can be more lenient
+} * sensitivity_factor;
+```
+
+### Character Entropy
+
+We calculate Shannon entropy to measure randomness:
+
+$H = -\sum_{i} p_i \log_2(p_i)$
+
+Where $p_i$ is the probability of character $i$ occurring in the text.
+
+```rust
+let entropy = char_frequencies.iter()
+    .map(|p| -p * p.log2())
+    .sum::<f64>();
+```
+
+### N-gram Analysis
+
+Trigrams and quadgrams are scored using frequency analysis:
+
+$G_n = \frac{\text{valid n-grams}}{\text{total n-grams}}$
+
+```rust
+let trigram_score = valid_trigrams.len() as f64 / total_trigrams.len() as f64;
+let quadgram_score = valid_quadgrams.len() as f64 / total_quadgrams.len() as f64;
+```
+
+### Character Transition Probability
+
+We analyze character pair frequencies against known English patterns:
+
+$T = \frac{\text{valid transitions}}{\text{total transitions}}$
+
+The transition matrix is pre-computed from a large English corpus and stored as a perfect hash table.
+
+### Sensitivity Levels
+
+The final threshold varies by sensitivity:
+- Low: $0.35 \times \text{length\_factor}$
+- Medium: $0.25 \times \text{length\_factor}$
+- High: $0.15 \times \text{length\_factor}$
+
+### Special Case Overrides
+
+The algorithm includes fast-path decisions:
+
+1. If English word ratio > 0.8: Not gibberish
+2. If ≥ 3 English words (Medium/High sensitivity): Not gibberish
+3. If no English words AND transition score < 0.3 (Low/Medium): Gibberish
+
+### Why These Weights?
+
+- **Word Ratio (40%)**: Strong indicator of English text
+- **Transitions (25%)**: Captures natural language patterns
+- **Trigrams (15%)**: Common subword patterns
+- **Quadgrams (10%)**: Longer patterns, but noisier
+- **Vowel Ratio (10%)**: Basic language structure
+
+This weighting balances accuracy with computational efficiency, prioritizing stronger indicators while still considering multiple aspects of language structure.
+
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to:
