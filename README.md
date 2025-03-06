@@ -21,29 +21,30 @@
 cargo install gibberish-or-not
 
 # As a library in Cargo.toml
-gibberish-or-not = "1.0.0"
+gibberish-or-not = "4.0.3"
 ```
 
 ## 🎯 Examples
 
 ```rust
-use gibberish_or_not::{is_gibberish, Sensitivity};
+use gibberish_or_not::{is_gibberish, is_password, Sensitivity};
 
 // Password Detection
 assert!(is_password("123456"));  // Detects common passwords
 
 // Valid English
 assert!(!is_gibberish("The quick brown fox jumps over the lazy dog", Sensitivity::Medium));
-assert!(!is_gibberish("Technical terms like TCP/IP and README.md work too", Sensitivity::Medium));
+assert!(!is_gibberish("Hello, world!", Sensitivity::Medium));
 
 // Gibberish
 assert!(is_gibberish("asdf jkl qwerty", Sensitivity::Medium));
 assert!(is_gibberish("xkcd vwpq mntb", Sensitivity::Medium));
+assert!(is_gibberish("println!({});", Sensitivity::Medium)); // Code snippets are classified as gibberish
 ```
 
 ## 🔬 How It Works
 
-Our advanced detection algorithm uses three main components:
+Our advanced detection algorithm uses multiple components:
 
 ### 1. 📚 Dictionary Analysis
 - **370,000+ English words** compiled into the binary
@@ -53,102 +54,79 @@ Our advanced detection algorithm uses three main components:
 
 ### 2. 🧮 N-gram Analysis
 - **Trigrams** (3-letter sequences)
-  - Needs >15% match for single-word texts (Bletchley)
-  - Needs >10% match for no-word texts (TextThatLooksLikeThisWhichCouldTripItUpOtherwise)
 - **Quadgrams** (4-letter sequences)
-  - Needs >10% match for single-word texts
-  - Needs >5% match for no-word texts (TextThatLooksLikeThisWhichCouldTripItUpOtherwise)
 - Trained on massive English text corpus
+- Weighted scoring system
 
 ### 3. 🎯 Smart Classification
-- Text with 2+ English words → Valid English
-- Text with 1 English word → Must pass n-gram thresholds
-- Text with no English words → Must pass lower n-gram thresholds
-- Short text (<10 chars) → Dictionary check only (not enough data for n-grams)
+- Composite scoring system combining:
+  - English word ratio (40% weight)
+  - Character transition probability (25% weight)
+  - Trigram analysis (15% weight)
+  - Quadgram analysis (10% weight)
+  - Vowel-consonant ratio (10% weight)
+- Length-based threshold adjustment
+- Special case handling for:
+  - Very short text (<10 chars)
+  - Non-printable characters
+  - Code snippets
+  - URLs and technical content
 
 ## 🎚️ Sensitivity Levels
 
-The library provides three sensitivity levels to fine-tune gibberish detection:
+The library provides three sensitivity levels:
 
-### Low Sensitivity (Not Very Sensitive to English)
-- Most strict classification
-- Requires very high confidence to classify text as English
-- Best for detecting texts that appear English-like but are actually gibberish
-- Thresholds:
-  - 2+ English words: Needs >20% trigram/quadgram match
-  - 1 English word: Needs >25% trigram/quadgram match
-  - No English words: Almost always classified as gibberish
-- Use when: You want to minimize false negatives (gibberish classified as English)
-- Example: Security applications where any potential gibberish should be flagged
-
-### Medium Sensitivity (Balanced)
-- Balanced approach for general use
-- Combines dictionary and n-gram analysis
-- Default mode suitable for most applications
-- Thresholds:
-  - 2+ English words: Automatically classified as English
-  - 1 English word: Needs >15% trigram or >10% quadgram match
-  - No English words: Needs >10% trigram or >5% quadgram match
-- Use when: You want a balanced approach for general text classification
-- Example: Content filtering, general text analysis
-
-### High Sensitivity (Very Sensitive to English)
+### High Sensitivity
 - Most lenient classification
-- Favors classifying text as English
-- Best when input is mostly gibberish and any English-like patterns are significant
-- Thresholds:
-  - Any English word: Automatically classified as English
-  - No English words: Needs >5% trigram or >3% quadgram match
-- Use when: You want to minimize false positives (English classified as gibberish)
-- Example: When processing user input where you want to accept anything remotely English-like
+- Easily accepts text as English
+- Best for minimizing false positives
+- Use when: You want to catch anything remotely English-like
 
-> **Note on Sensitivity**: Think of sensitivity as how sensitive the detector is to English words. 
-> High sensitivity means it's very sensitive to English (easily detects English), while 
-> Low sensitivity means it's not very sensitive to English (requires more evidence to classify as English).
+### Medium Sensitivity (Default)
+- Balanced approach
+- Suitable for general text classification
+- Reliable for most use cases
+- Use when: You want general-purpose gibberish detection
 
-```rust
-use gibberish_or_not::{is_gibberish, Sensitivity};
-
-// Example text with one English word "iron"
-let text = "Rcl maocr otmwi lit dnoen oehc 13 iron seah.";
-
-// Different results based on sensitivity
-assert!(is_gibberish(text, Sensitivity::Low));     // Classified as gibberish (strict)
-assert!(!is_gibberish(text, Sensitivity::Medium)); // Classified as English
-assert!(!is_gibberish(text, Sensitivity::High));    // Classified as English (lenient)
-```
+### Low Sensitivity
+- Most strict classification
+- Requires strong evidence of English
+- Best for security applications
+- Use when: False positives are costly
 
 ## 🔑 Password Detection
 
-The library includes functionality to detect common passwords:
-
-### Detection Method
-- Uses a comprehensive list of over 10,000 common passwords
-- Performs exact matching against known passwords
-- Supports multiple encodings (UTF-8, UTF-16)
-- Zero runtime loading overhead using perfect hash table
-
-### Example Usage
+Built-in detection of common passwords:
 
 ```rust
 use gibberish_or_not::is_password;
 
-// Check if a string is a common password
-assert!(is_password("123456"));        // True - very common password
-assert!(is_password("P@ssw0rd"));      // True - common password
-assert!(!is_password("_a_super_unique_password_skibidi_ohio_rizz")); // False - not in common password list
+assert!(is_password("123456"));     // Common password
+assert!(is_password("password"));   // Common password
+assert!(!is_password("unique_and_secure_passphrase")); // Not in common list
 ```
 
-## � Contributing
+## 🎯 Special Cases
 
-Contributions are welcome! Here's how you can help:
+The library handles various special cases:
 
-- 🐛 Report bugs and request features
-- 📝 Improve documentation
-- 🔧 Submit pull requests
-- 💡 Share ideas and feedback
+- Code snippets are classified as gibberish
+- URLs in text are preserved for analysis
+- Technical terms and abbreviations are recognized
+- Mixed-language content is supported
+- ASCII art is detected as gibberish
+- Common internet text patterns are recognized
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to:
+
+- Report bugs and request features
+- Improve documentation
+- Submit pull requests
+- Add test cases
 
 ## 📜 License
 
-MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
