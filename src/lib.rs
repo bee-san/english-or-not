@@ -1,7 +1,10 @@
 use phf::phf_set;
+use std::path::{Path, PathBuf};
 
 mod dictionary;
 mod passwords;
+mod model;
+pub use model::{download_model, default_model_path};
 
 /// Sensitivity level for gibberish detection
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -19,6 +22,54 @@ pub enum Sensitivity {
     /// Best when input is expected to be mostly gibberish, and any English-like
     /// patterns should be flagged as potential English text.
     Low,
+}
+
+/// Gibberish detector with optional enhanced model
+pub struct GibberishDetector {
+    model_path: Option<PathBuf>,
+}
+
+impl GibberishDetector {
+    /// Create new detector with no model
+    pub fn new() -> Self {
+        Self { model_path: None }
+    }
+
+    /// Create new detector with model path
+    pub fn with_model<P: AsRef<Path>>(path: P) -> Self {
+        Self {
+            model_path: Some(path.as_ref().to_path_buf()),
+        }
+    }
+
+    /// Check if model is available
+    pub fn has_enhanced_detection(&self) -> bool {
+        self.model_path
+            .as_ref()
+            .map(|p| model::Model::exists(p))
+            .unwrap_or(false)
+    }
+
+    /// Main detection function
+    pub fn is_gibberish(&self, text: &str, sensitivity: Sensitivity) -> bool {
+        // Run basic checks first
+        let basic_result = run_basic_checks(text, sensitivity);
+        
+        // If basic checks say it's gibberish, no need for model
+        if basic_result {
+            return true;
+        }
+        
+        // Try enhanced detection if available
+        if let Some(path) = &self.model_path {
+            if let Some(model) = model::Model::get_or_load(path) {
+                return model.predict(text);
+            }
+        }
+        
+        // Fall back to basic result
+        basic_result
+    }
 }
 
 fn is_english_word(word: &str) -> bool {
@@ -83,6 +134,11 @@ pub fn is_password(text: &str) -> bool {
 ///    - 0 English words → more lenient n-gram check
 /// 4. Use different n-gram thresholds depending on sensitivity level
 pub fn is_gibberish(text: &str, sensitivity: Sensitivity) -> bool {
+    GibberishDetector::new().is_gibberish(text, sensitivity)
+}
+
+/// Run the basic gibberish detection algorithm without model enhancement
+fn run_basic_checks(text: &str, sensitivity: Sensitivity) -> bool {
     // Clean the text first
     let cleaned = clean_text(text);
 
