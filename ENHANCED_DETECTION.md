@@ -1,6 +1,6 @@
 # Enhanced Gibberish Detection
 
-This document explains how to use the enhanced gibberish detection feature that integrates with the HuggingFace Inference API.
+This document explains how to use the enhanced gibberish detection library.
 
 ## Overview
 
@@ -12,148 +12,99 @@ The model classifies text into four categories:
 3. **Mild gibberish** - Text with grammatical errors (considered not gibberish)
 4. **Clean** - Valid English text (considered not gibberish)
 
-## Setup
+## Usage
 
-### Download the Model
+### Managing the Model
 
-You can download the model using the download_model tool:
+First, you'll need to download the model. The library provides functions to manage this:
 
-```bash
-# Download to default cache directory
-cargo run --bin download_model
+```rust
+use gibberish_or_not::{download_model_with_progress_bar, default_model_path, model_exists};
+use std::error::Error;
+
+fn setup() -> Result<(), Box<dyn Error>> {
+    let path = default_model_path();
+    
+    if !model_exists(&path) {
+        download_model_with_progress_bar(&path)?;
+    }
+    
+    Ok(())
+}
 ```
 
-You can also specify a custom download location:
+For custom progress reporting:
 
-```bash
-# Download to a custom location
-cargo run --bin download_model /path/to/custom/location
+```rust
+use gibberish_or_not::{download_model, ModelError};
+use std::path::Path;
+
+fn download_with_custom_progress() -> Result<(), ModelError> {
+    let path = Path::new("./model_dir");
+    
+    download_model(path, |progress| {
+        // Handle progress updates (0.0 to 1.0)
+        // Example: update a progress bar in your UI
+    })
+}
 ```
 
-For help and more options:
+### Using the Detector
 
-```bash
-cargo run --bin download_model --help
-```
-
-This will download the model files (approximately 400-500MB) to the specified directory.
-
-The download may take several minutes depending on your internet connection.
-
-### Test the Enhanced Detection
-
-You can test the enhanced detection using the enhanced_detection tool:
-
-```bash
-# Run with default settings
-cargo run --bin enhanced_detection
-```
-
-You can customize the behavior with various options:
-
-```bash
-# Set sensitivity level
-cargo run --bin enhanced_detection --sensitivity high
-
-# Specify custom model path
-cargo run --bin enhanced_detection --path /path/to/model
-
-# Force basic detection (ignore model)
-cargo run --bin enhanced_detection --basic
-```
-
-For help and more options:
-
-```bash
-cargo run --bin enhanced_detection --help
-```
-
-This will let you interactively test the enhanced detection.
-
-## Using in Your Code
-
-### Basic Usage
+#### With Enhanced Detection
 
 ```rust
 use gibberish_or_not::{GibberishDetector, Sensitivity, default_model_path};
 
 // Create detector with model
 let detector = GibberishDetector::with_model(default_model_path());
-
-// Check if text is gibberish
 let result = detector.is_gibberish("Test text", Sensitivity::Medium);
-println!("Is gibberish: {}", result);
 ```
 
-### Fallback to Basic Detection
-
-If the model is not available or you want to use basic detection:
+#### With Basic Detection
 
 ```rust
 use gibberish_or_not::{GibberishDetector, Sensitivity};
 
 // Create detector without model
 let detector = GibberishDetector::new();
-
-// Check if text is gibberish (uses only basic algorithm)
 let result = detector.is_gibberish("Test text", Sensitivity::Medium);
-println!("Is gibberish: {}", result);
 ```
 
-### Checking if Enhanced Detection is Available
+#### Checking Enhanced Detection Availability
 
 ```rust
 use gibberish_or_not::{GibberishDetector, default_model_path};
 
 let detector = GibberishDetector::with_model(default_model_path());
 if detector.has_enhanced_detection() {
-    println!("Enhanced detection is available");
+    // Use enhanced detection
 } else {
-    println!("Using basic detection only");
+    // Fall back to basic detection
 }
 ```
 
-### Downloading the Model Programmatically
-
-You can download the model directly from your Rust code:
+### Example Integration
 
 ```rust
-use gibberish_or_not::{download_model_with_progress_bar, default_model_path, model_exists};
-use std::path::Path;
+use gibberish_or_not::{GibberishDetector, Sensitivity, default_model_path, model_exists, download_model_with_progress_bar};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Download to default path
     let path = default_model_path();
     
-    // Check if model already exists
+    // Download model if needed
     if !model_exists(&path) {
-        println!("Downloading model...");
         download_model_with_progress_bar(&path)?;
-    } else {
-        println!("Model already exists at: {}", path.display());
     }
     
-    // Or download to custom path
-    // let custom_path = Path::new("./my_model_dir");
-    // download_model_with_progress_bar(custom_path)?;
+    // Create detector
+    let detector = GibberishDetector::with_model(&path);
+    
+    // Process text
+    let text = "Sample text to analyze";
+    let is_gibberish = detector.is_gibberish(text, Sensitivity::Medium);
     
     Ok(())
-}
-```
-
-For more advanced usage with custom progress reporting:
-
-```rust
-use gibberish_or_not::{download_model, ModelError};
-use std::path::Path;
-
-fn main() -> Result<(), ModelError> {
-    let path = Path::new("./my_model_dir");
-    
-    // Download with custom progress reporting
-    download_model(path, |progress| {
-        println!("Download progress: {:.1}%", progress * 100.0);
-    })
 }
 ```
 
@@ -168,7 +119,7 @@ fn main() -> Result<(), ModelError> {
 ## Notes
 
 - The model is downloaded on demand and runs locally
+- The library focuses on functionality over CLI interaction
 - The model is optimized for English text
 - The model requires approximately 400-500MB of disk space
 - Enhanced detection is optional and will only be used if the model is available
-- You can force basic detection even if the model is available using the `--basic` flag

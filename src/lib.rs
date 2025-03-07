@@ -4,7 +4,14 @@ use std::path::{Path, PathBuf};
 mod dictionary;
 mod passwords;
 mod model;
-pub use model::{download_model, default_model_path, model_exists, download_model_with_progress_bar, ModelError};
+#[doc(hidden)]
+mod cli;
+
+// Core library exports
+pub use model::{ModelError, default_model_path, download_model, model_exists};
+
+// CLI utilities made available for binary integration, but hidden from docs
+pub use cli::download_with_progress_bar;
 
 /// Sensitivity level for gibberish detection
 #[derive(Debug, Clone, Copy, PartialEq)]
