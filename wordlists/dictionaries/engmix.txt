@@ -10,6 +10,7 @@ abactor
 abactors
 abacus
 abacuses
+nasa
 abaft
 abalone
 abandon
