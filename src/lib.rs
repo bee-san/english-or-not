@@ -1214,4 +1214,65 @@ mod tests {
         let binary_gibberish = "\u{1}\0\u{1}\0\0\u{1}\u{1}\u{1}\u{1}\u{1}\0\0\0\0\u{1}\u{1}\0\u{1}\0\0\0\u{1}\u{1}\0\u{1}\0\0\u{1}\u{1}\u{1}\0\u{1}\u{1}\u{1}\0\u{1}\u{1}\u{1}\u{1}\0\0\0\0\u{1}\0\0\0\0\0\u{1}\u{1}\0\u{1}\u{1}\u{1}\u{1}\u{1}\u{1}\0\0\u{1}\u{1}\0\0\u{1}\0\0\0\0\0\u{1}\u{1}\0\0\0\u{1}\0\u{1}\u{1}\0\u{1}\u{1}\0\0\u{1}\u{1}\0\0\0\0\u{1}\u{1}\u{1}\0\0\0\u{1}\u{1}\u{1}\u{1}\0\u{1}\0\u{1}\u{1}\0\u{1}\0\0\0\0\0\u{1}\u{1}\u{1}\0\0\0\u{1}\u{1}\u{1}\u{1}\0\u{1}\0\u{1}\u{1}\u{1}\0\0\0\0\u{1}\u{1}\u{1}\u{1}\0\0\u{1}\0\u{1}\u{1}\u{1}\0\u{1}\0\0\u{1}\u{1}\u{1}\u{1}\0\u{1}\0\0\u{1}\0\u{1}\u{1}\0\0\0\u{1}\0\0\0\0\0\u{1}\u{1}\0\u{1}\0\u{1}\0\u{1}\u{1}\u{1}\0\u{1}\0\u{1}\u{1}\u{1}\0\0\u{1}\0\0\u{1}\u{1}\0\0\u{1}\u{1}\u{1}\u{1}\u{1}\0\0\u{1}\0\u{1}\0\u{1}\0\0\0\0\0\u{1}\u{1}\0\u{1}\u{1}\0\u{1}\u{1}\u{1}\u{1}\u{1}\0\0\u{1}\0\u{1}\0\0\0\0\0\u{1}\u{1}\u{1}\0\u{1}\u{1}\0\u{1}\u{1}\0\u{1}\u{1}\u{1}\u{1}\u{1}\u{1}\u{1}\0\u{1}\u{1}\u{1}\0\u{1}\0\u{1}\u{1}\u{1}\0";
         assert!(is_gibberish(binary_gibberish, Sensitivity::Medium));
     }
+
+    #[test]
+    fn test_gibberish_string_1() {
+        init_logger();
+        let text = "ant nehoteeh ntaoe seen e tohetael";
+        debug!("Testing gibberish string 1: '{}'", text);
+        
+        // Use the diagnostic function to see detailed analysis
+        let is_gibberish_result = log_gibberish_analysis(text);
+        
+        // Test with low sensitivity
+        assert!(is_gibberish(text, Sensitivity::Low));
+    }
+
+    #[test]
+    fn test_gibberish_string_2() {
+        init_logger();
+        let text = "eoa nte neeseateh tot ne lhoteenah";
+        debug!("Testing gibberish string 2: '{}'", text);
+        assert!(is_gibberish(text, Sensitivity::Low));
+    }
+
+    #[test]
+    fn test_gibberish_string_3() {
+        init_logger();
+        let text = "nte neeseateh tot ne lhoteenahaoe";
+        debug!("Testing gibberish string 3: '{}'", text);
+        assert!(is_gibberish(text, Sensitivity::Low));
+    }
+
+    #[test]
+    fn test_gibberish_string_4() {
+        init_logger();
+        let text = "alehestnnhton o ee tee  a eatohteen";
+        debug!("Testing gibberish string 4: '{}'", text);
+        assert!(is_gibberish(text, Sensitivity::Low));
+    }
+
+    #[test]
+    fn test_gibberish_string_5() {
+        init_logger();
+        let text = "h eee lee ahetes n ntoatohene nttoa";
+        debug!("Testing gibberish string 5: '{}'", text);
+        assert!(is_gibberish(text, Sensitivity::Low));
+    }
+
+    #[test]
+    fn test_gibberish_string_6() {
+        init_logger();
+        let text = "ana leeoehanteees t hot eenohet tn";
+        debug!("Testing gibberish string 6: '{}'", text);
+        assert!(is_gibberish(text, Sensitivity::Low));
+    }
+
+    #[test]
+    fn test_gibberish_string_7() {
+        init_logger();
+        let text = "eoahaneetohl en tot hetaeseen etn";
+        debug!("Testing gibberish string 7: '{}'", text);
+        assert!(is_gibberish(text, Sensitivity::Low));
+    }
 }
