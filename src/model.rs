@@ -7,6 +7,9 @@ use reqwest::blocking::Client;
 use std::time::Duration;
 
 /// Errors that can occur during model operations
+///
+/// This enum represents the various error types that can occur when working with the model,
+/// including IO errors, network errors, model-specific errors, and JSON parsing errors.
 #[derive(Error, Debug)]
 pub enum ModelError {
     #[error("IO error: {0}")]
@@ -115,6 +118,39 @@ impl Model {
 }
 
 /// Download model files with progress reporting
+///
+/// This function downloads the required model files to the specified path and reports progress
+/// through a callback function. It's designed to be used by applications that want to provide
+/// custom progress reporting UI.
+///
+/// # Arguments
+///
+/// * `path` - The path where the model files should be downloaded
+/// * `progress` - A callback function that receives progress updates as a float between 0.0 and 1.0
+///
+/// # Returns
+///
+/// * `Ok(())` if the download was successful
+/// * `Err(ModelError)` if an error occurred during download
+///
+/// # Example
+///
+/// ```rust,no_run
+/// use std::path::Path;
+/// use gibberish_or_not::download_model;
+///
+/// fn main() -> Result<(), Box<dyn std::error::Error>> {
+///     let path = Path::new("./my_model_dir");
+///     
+///     // Download with progress reporting
+///     download_model(path, |progress| {
+///         println!("Download progress: {:.1}%", progress * 100.0);
+///     })?;
+///     
+///     println!("Model downloaded successfully!");
+///     Ok(())
+/// }
+/// ```
 pub fn download_model<P: AsRef<Path>>(path: P, progress: impl Fn(f32)) -> Result<(), ModelError> {
     let path = path.as_ref();
     fs::create_dir_all(path)?;
@@ -201,6 +237,24 @@ pub fn download_model<P: AsRef<Path>>(path: P, progress: impl Fn(f32)) -> Result
 }
 
 /// Get default model path in user's cache directory
+///
+/// Returns the default path where the model should be stored, which is typically
+/// in the user's cache directory under "gibberish-or-not/model".
+///
+/// # Returns
+///
+/// A `PathBuf` pointing to the default model location
+///
+/// # Example
+///
+/// ```rust
+/// use gibberish_or_not::default_model_path;
+///
+/// fn main() {
+///     let model_path = default_model_path();
+///     println!("Default model path: {}", model_path.display());
+/// }
+/// ```
 pub fn default_model_path() -> PathBuf {
     dirs::cache_dir()
         .unwrap_or_else(|| PathBuf::from("./cache"))
@@ -209,11 +263,66 @@ pub fn default_model_path() -> PathBuf {
 }
 
 /// Check if the model exists at the specified path
+///
+/// This function checks if all required model files exist at the specified path.
+///
+/// # Arguments
+///
+/// * `path` - The path to check for model files
+///
+/// # Returns
+///
+/// `true` if all required model files exist, `false` otherwise
+///
+/// # Example
+///
+/// ```rust
+/// use gibberish_or_not::{default_model_path, model_exists};
+///
+/// fn main() {
+///     let path = default_model_path();
+///     if model_exists(&path) {
+///         println!("Model is available at: {}", path.display());
+///     } else {
+///         println!("Model is not available. Consider downloading it.");
+///     }
+/// }
+/// ```
 pub fn model_exists<P: AsRef<Path>>(path: P) -> bool {
     Model::exists(path.as_ref())
 }
 
 /// Download the model with a simple progress bar
+///
+/// This is a convenience function that downloads the model to the specified path
+/// and displays a simple progress bar on the console. It's designed for CLI applications
+/// or simple integration into Rust programs.
+///
+/// # Arguments
+///
+/// * `path` - The path where the model files should be downloaded
+///
+/// # Returns
+///
+/// * `Ok(())` if the download was successful
+/// * `Err(ModelError)` if an error occurred during download
+///
+/// # Example
+///
+/// ```rust,no_run
+/// use gibberish_or_not::{download_model_with_progress_bar, default_model_path};
+///
+/// fn main() -> Result<(), Box<dyn std::error::Error>> {
+///     // Download to default path
+///     download_model_with_progress_bar(default_model_path())?;
+///     
+///     // Or download to custom path
+///     // download_model_with_progress_bar("./my_model_dir")?;
+///     
+///     println!("Model downloaded successfully!");
+///     Ok(())
+/// }
+/// ```
 pub fn download_model_with_progress_bar<P: AsRef<Path>>(path: P) -> Result<(), ModelError> {
     println!("Downloading model to: {}", path.as_ref().display());
     

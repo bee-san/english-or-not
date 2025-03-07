@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 mod dictionary;
 mod passwords;
 mod model;
-pub use model::{download_model, default_model_path};
+pub use model::{download_model, default_model_path, model_exists, download_model_with_progress_bar, ModelError};
 
 /// Sensitivity level for gibberish detection
 #[derive(Debug, Clone, Copy, PartialEq)]
