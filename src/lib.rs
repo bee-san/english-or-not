@@ -1183,9 +1183,35 @@ mod tests {
 
     #[test]
     fn test_astar_search_gibberish_37() {
-        let text = "A";
-        println!("\n==== TESTING ASTAR SEARCH GIBBERISH 37 ====");
-        println!("Testing text: '{}'", text);
-        assert!(is_gibberish(text, Sensitivity::Medium));
+        test_with_sensitivities("Aastar search algorithm is a path finding algorithm", false, false, false);
+    }
+
+    #[test]
+    fn test_cyrillic_gibberish() {
+        // Test for Cyrillic-like gibberish
+        test_with_sensitivities("%B:;@J A8 4>35= CG3DFL\\ <G697 ?K HAI", true, true, true);
+    }
+
+    #[test]
+    fn test_mixed_latin_gibberish() {
+        // Test for mixed Latin character gibberish
+        test_with_sensitivities("xgcyzw Snh fabkqta,jedm ioopl  uru v", true, true, true);
+    }
+
+    #[test]
+    fn test_binary_control_chars_gibberish() {
+        // Test for binary/control character gibberish
+        let binary_gibberish = "\u{1}\0\u{1}\0\0\u{1}\u{1}\u{1}\u{1}\u{1}\0\0\0\0\u{1}\u{1}\0\u{1}\0\0\0\u{1}\u{1}\0\u{1}\0\0\u{1}\u{1}\u{1}\0\u{1}\u{1}\u{1}\0\u{1}\u{1}\u{1}\u{1}\0\0\0\0\u{1}\0\0\0\0\0\u{1}\u{1}\0\u{1}\u{1}\u{1}\u{1}\u{1}\u{1}\0\0\u{1}\u{1}\0\0\u{1}\0\0\0\0\0\u{1}\u{1}\0\0\0\u{1}\0\u{1}\u{1}\0\u{1}\u{1}\0\0\u{1}\u{1}\0\0\0\0\u{1}\u{1}\u{1}\0\0\0\u{1}\u{1}\u{1}\u{1}\0\u{1}\0\u{1}\u{1}\0\u{1}\0\0\0\0\0\u{1}\u{1}\u{1}\0\0\0\u{1}\u{1}\u{1}\u{1}\0\u{1}\0\u{1}\u{1}\u{1}\0\0\0\0\u{1}\u{1}\u{1}\u{1}\0\0\u{1}\0\u{1}\u{1}\u{1}\0\u{1}\0\0\u{1}\u{1}\u{1}\u{1}\0\u{1}\0\0\u{1}\0\u{1}\u{1}\0\0\0\u{1}\0\0\0\0\0\u{1}\u{1}\0\u{1}\0\u{1}\0\u{1}\u{1}\u{1}\0\u{1}\0\u{1}\u{1}\u{1}\0\0\u{1}\0\0\u{1}\u{1}\0\0\u{1}\u{1}\u{1}\u{1}\u{1}\0\0\u{1}\0\u{1}\0\u{1}\0\0\0\0\0\u{1}\u{1}\0\u{1}\u{1}\0\u{1}\u{1}\u{1}\u{1}\u{1}\0\0\u{1}\0\u{1}\0\0\0\0\0\u{1}\u{1}\u{1}\0\u{1}\u{1}\0\u{1}\u{1}\0\u{1}\u{1}\u{1}\u{1}\u{1}\u{1}\u{1}\0\u{1}\u{1}\u{1}\0\u{1}\0\u{1}\u{1}\u{1}\0";
+        test_with_sensitivities(binary_gibberish, true, true, true);
+    }
+
+    #[test]
+    fn test_all_gibberish_examples_medium_sensitivity() {
+        // Test all examples with medium sensitivity
+        assert!(is_gibberish("%B:;@J A8 4>35= CG3DFL\\ <G697 ?K HAI", Sensitivity::Medium));
+        assert!(is_gibberish("xgcyzw Snh fabkqta,jedm ioopl  uru v", Sensitivity::Medium));
+        
+        let binary_gibberish = "\u{1}\0\u{1}\0\0\u{1}\u{1}\u{1}\u{1}\u{1}\0\0\0\0\u{1}\u{1}\0\u{1}\0\0\0\u{1}\u{1}\0\u{1}\0\0\u{1}\u{1}\u{1}\0\u{1}\u{1}\u{1}\0\u{1}\u{1}\u{1}\u{1}\0\0\0\0\u{1}\0\0\0\0\0\u{1}\u{1}\0\u{1}\u{1}\u{1}\u{1}\u{1}\u{1}\0\0\u{1}\u{1}\0\0\u{1}\0\0\0\0\0\u{1}\u{1}\0\0\0\u{1}\0\u{1}\u{1}\0\u{1}\u{1}\0\0\u{1}\u{1}\0\0\0\0\u{1}\u{1}\u{1}\0\0\0\u{1}\u{1}\u{1}\u{1}\0\u{1}\0\u{1}\u{1}\0\u{1}\0\0\0\0\0\u{1}\u{1}\u{1}\0\0\0\u{1}\u{1}\u{1}\u{1}\0\u{1}\0\u{1}\u{1}\u{1}\0\0\0\0\u{1}\u{1}\u{1}\u{1}\0\0\u{1}\0\u{1}\u{1}\u{1}\0\u{1}\0\0\u{1}\u{1}\u{1}\u{1}\0\u{1}\0\0\u{1}\0\u{1}\u{1}\0\0\0\u{1}\0\0\0\0\0\u{1}\u{1}\0\u{1}\0\u{1}\0\u{1}\u{1}\u{1}\0\u{1}\0\u{1}\u{1}\u{1}\0\0\u{1}\0\0\u{1}\u{1}\0\0\u{1}\u{1}\u{1}\u{1}\u{1}\0\0\u{1}\0\u{1}\0\u{1}\0\0\0\0\0\u{1}\u{1}\0\u{1}\u{1}\0\u{1}\u{1}\u{1}\u{1}\u{1}\0\0\u{1}\0\u{1}\0\0\0\0\0\u{1}\u{1}\u{1}\0\u{1}\u{1}\0\u{1}\u{1}\0\u{1}\u{1}\u{1}\u{1}\u{1}\u{1}\u{1}\0\u{1}\u{1}\u{1}\0\u{1}\0\u{1}\u{1}\u{1}\0";
+        assert!(is_gibberish(binary_gibberish, Sensitivity::Medium));
     }
 }
