@@ -24,7 +24,79 @@ cargo install gibberish-or-not
 gibberish-or-not = "4.0.3"
 ```
 
+<<<<<<< Updated upstream
 ## 🎯 Examples
+=======
+## 🤖 Enhanced Detection with BERT
+
+The library offers enhanced detection using a BERT model for more accurate results on borderline cases. To use enhanced detection:
+
+1. Set up HuggingFace authentication (one of two methods):
+
+   **Method 1: Environment Variable**
+   ```bash
+   # Set the token in your environment
+   export HUGGING_FACE_HUB_TOKEN=your_token_here
+   ```
+
+   **Method 2: Direct Token**
+   ```rust
+   use gibberish_or_not::{download_model_with_progress_bar, default_model_path};
+   
+   // Pass token directly to the download function
+   download_model_with_progress_bar(default_model_path(), Some("your_token_here"))?;
+   ```
+
+   Get your token by:
+   1. Creating an account at https://huggingface.co
+   2. Generating a token at https://huggingface.co/settings/tokens
+
+2. Download the model (choose one method):
+   ```bash
+   # Using the CLI (uses environment variable)
+   cargo run --bin download_model
+
+   # Or in your code (using direct token)
+   use gibberish_or_not::{download_model_with_progress_bar, default_model_path};
+   download_model_with_progress_bar(default_model_path(), Some("your_token_here"))?;
+   ```
+
+3. Use enhanced detection in your code:
+   ```rust
+   // Basic usage - automatically uses enhanced detection if model exists
+   use gibberish_or_not::{is_gibberish, Sensitivity};
+   
+   // The function automatically checks for model at default_model_path()
+   let result = is_gibberish("Your text here", Sensitivity::Medium);
+   
+   // Optional: Explicit model control
+   use gibberish_or_not::{GibberishDetector, default_model_path};
+   
+   // Create detector with model - useful if you want to:
+   // - Use a custom model path
+   // - Check if enhanced detection is available
+   // - Reuse the same model instance
+   let detector = GibberishDetector::with_model(default_model_path());
+   if detector.has_enhanced_detection() {
+       let result = detector.is_gibberish("Your text here", Sensitivity::Medium);
+   }
+   ```
+
+Note: The basic detection algorithm will be used as a fallback if the model is not available. The model is automatically loaded from the default path (`default_model_path()`) when using the simple `is_gibberish` function.
+
+You can also check the token status programmatically:
+```rust
+use gibberish_or_not::{check_token_status, TokenStatus, default_model_path};
+
+match check_token_status(default_model_path()) {
+    TokenStatus::Required => println!("HuggingFace token needed"),
+    TokenStatus::Available => println!("Token found, ready to download"),
+    TokenStatus::NotRequired => println!("Model exists, no token needed"),
+}
+```
+
+##  Examples
+>>>>>>> Stashed changes
 
 ```rust
 use gibberish_or_not::{is_gibberish, is_password, Sensitivity};

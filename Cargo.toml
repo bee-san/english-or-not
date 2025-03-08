@@ -1,6 +1,6 @@
 [package]
 name = "gibberish-or-not"
-version = "4.1.1"
+version = "5.0.0"
 edition = "2021"
 license='MIT'
 description='Figure out if text is gibberish or not'
