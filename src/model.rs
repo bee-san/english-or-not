@@ -84,12 +84,10 @@ impl std::fmt::Debug for Model {
 static MODEL: OnceLock<Option<Model>> = OnceLock::new();
 
 // Model file URLs and names
-const MODEL_FILES: [(&str, &str); 5] = [
+const MODEL_FILES: [(&str, &str); 3] = [
     ("model.safetensors", "https://huggingface.co/gibberish-or-not/gibberish-detector/resolve/main/model.safetensors"),
     ("config.json", "https://huggingface.co/gibberish-or-not/gibberish-detector/resolve/main/config.json"),
     ("tokenizer.json", "https://huggingface.co/gibberish-or-not/gibberish-detector/resolve/main/tokenizer.json"),
-    ("tokenizer_config.json", "https://huggingface.co/gibberish-or-not/gibberish-detector/resolve/main/tokenizer_config.json"),
-    ("vocab.txt", "https://huggingface.co/gibberish-or-not/gibberish-detector/resolve/main/vocab.txt"),
 ];
 
 /// Status of the HuggingFace token
@@ -385,6 +383,13 @@ pub fn model_exists<P: AsRef<Path>>(path: P) -> bool {
 mod tests {
     use super::*;
 
+    #[test]
+    fn test_model_exists() -> Result<(), ModelError> {
+        let model_path = setup_test_model()?;
+        assert!(Model::exists(&model_path));
+        Ok(())
+    }
+
     fn setup_test_model() -> Result<PathBuf, ModelError> {
         let test_dir = PathBuf::from("target").join("test_model");
         fs::create_dir_all(&test_dir)?;
@@ -405,10 +410,6 @@ mod tests {
         let config_path = test_dir.join("config.json");
         fs::write(&config_path, serde_json::to_string_pretty(&config)?)?;
 
-        // Write vocab.txt
-        let vocab_path = test_dir.join("vocab.txt");
-        fs::write(&vocab_path, "hello\nworld\n[UNK]\n[PAD]")?;
-        
         // Write tokenizer.json (minimal version for testing)
         let tokenizer_path = test_dir.join("tokenizer.json");
         fs::write(&tokenizer_path, r#"{
@@ -419,28 +420,12 @@ mod tests {
             },
             "added_tokens": []
         }"#)?;
-        
-        // Write tokenizer_config.json
-        let tokenizer_config_path = test_dir.join("tokenizer_config.json");
-        fs::write(&tokenizer_config_path, r#"{
-            "do_lower_case": true,
-            "unk_token": "[UNK]",
-            "pad_token": "[PAD]"
-        }"#)?;
 
         // Create a dummy safetensors file for testing
-        // In a real test, you would need to create a valid safetensors file
         let safetensors_path = test_dir.join("model.safetensors");
         fs::write(&safetensors_path, "DUMMY SAFETENSORS FILE")?;
 
         Ok(test_dir)
-    }
-
-    #[test]
-    fn test_model_exists() -> Result<(), ModelError> {
-        let model_path = setup_test_model()?;
-        assert!(Model::exists(&model_path));
-        Ok(())
     }
 
     #[test]
