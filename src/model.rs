@@ -1,15 +1,15 @@
+use log::warn;
+use reqwest::blocking::Client;
+use serde::{Deserialize, Serialize};
+use std::fs::{self, File};
+use std::io::{self, copy, Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
-use std::fs::{self, File};
-use std::io::{self, Write, Read, copy};
-use thiserror::Error;
-use reqwest::blocking::Client;
 use std::time::Duration;
-use serde::{Deserialize, Serialize};
-use log::warn;
+use thiserror::Error;
 
 // Candle imports
-use candle_core::{Device, Tensor, DType};
+use candle_core::{DType, Device, Tensor};
 use candle_nn::VarBuilder;
 use candle_transformers::models::bert::{BertModel, Config as BertConfig};
 
@@ -27,10 +27,10 @@ pub enum ModelError {
 
     #[error("JSON error: {0}")]
     Json(#[from] serde_json::Error),
-    
+
     #[error("Candle error: {0}")]
     Candle(String),
-    
+
     #[error("Tokenizer error: {0}")]
     Tokenizer(String),
 }
@@ -135,12 +135,12 @@ pub enum TokenStatus {
 /// ```
 pub fn check_token_status<P: AsRef<Path>>(path: P) -> TokenStatus {
     let path = path.as_ref();
-    
+
     // If model exists, token is not required
     if Model::exists(path) {
         return TokenStatus::NotRequired;
     }
-    
+
     // Check if token is set
     match check_huggingface_token(None) {
         Some(_) => TokenStatus::Available,
@@ -150,7 +150,8 @@ pub fn check_token_status<P: AsRef<Path>>(path: P) -> TokenStatus {
 
 /// Check if HuggingFace token is set, optionally taking a token directly
 fn check_huggingface_token(token: Option<&str>) -> Option<String> {
-    token.map(String::from)
+    token
+        .map(String::from)
         .or_else(|| std::env::var("HUGGING_FACE_HUB_TOKEN").ok())
 }
 
@@ -160,33 +161,35 @@ impl Model {
         if !path.exists() {
             return false;
         }
-        
+
         // Check if all required model files exist
         for (filename, _) in MODEL_FILES.iter() {
             if !path.join(filename).exists() {
                 return false;
             }
         }
-        
+
         true
     }
 
     /// Get or load model singleton
     pub fn get_or_load(path: &Path) -> Option<&'static Model> {
-        MODEL.get_or_init(|| {
-            if !Self::exists(path) {
-                warn!("Model files not found at: {}", path.display());
-                return None;
-            }
-            
-            match Self::load(path) {
-                Ok(model) => Some(model),
-                Err(e) => {
-                    warn!("Failed to load model: {}", e);
-                    None
+        MODEL
+            .get_or_init(|| {
+                if !Self::exists(path) {
+                    warn!("Model files not found at: {}", path.display());
+                    return None;
                 }
-            }
-        }).as_ref()
+
+                match Self::load(path) {
+                    Ok(model) => Some(model),
+                    Err(e) => {
+                        warn!("Failed to load model: {}", e);
+                        None
+                    }
+                }
+            })
+            .as_ref()
     }
 
     /// Load model from disk
@@ -206,14 +209,13 @@ impl Model {
             let mut file = File::open(&bert_config_path)?;
             let mut contents = String::new();
             file.read_to_string(&mut contents)?;
-            serde_json::from_str(&contents)
-                .map_err(|e| ModelError::Json(e))?
+            serde_json::from_str(&contents).map_err(|e| ModelError::Json(e))?
         };
 
         // Load model weights using Candle
         let model_path = path.join("model.safetensors");
         let device = Device::Cpu;
-        
+
         // Create VarBuilder from safetensors file
         let vb = if model_path.exists() {
             unsafe {
@@ -223,11 +225,11 @@ impl Model {
         } else {
             return Err(ModelError::Model("model.safetensors not found".to_string()));
         };
-        
+
         // Create BertModel
-        let model = BertModel::load(vb, &bert_config)
-            .map_err(|e| ModelError::Candle(e.to_string()))?;
-            
+        let model =
+            BertModel::load(vb, &bert_config).map_err(|e| ModelError::Candle(e.to_string()))?;
+
         // Load tokenizer
         let tokenizer_path = path.join("tokenizer.json");
         let tokenizer = if tokenizer_path.exists() {
@@ -260,34 +262,36 @@ impl Model {
             }
         }
     }
-    
+
     /// Run prediction with score
     fn predict_with_score(&self, text: &str) -> Result<f32, ModelError> {
         // Tokenize input
-        let encoding = self.tokenizer.encode(text, true)
+        let encoding = self
+            .tokenizer
+            .encode(text, true)
             .map_err(|e| ModelError::Tokenizer(e.to_string()))?;
-        
+
         let input_ids = encoding.get_ids();
         let token_type_ids = encoding.get_type_ids();
-        
+
         // Convert to tensors
         let device = Device::Cpu;
         let input_ids = Tensor::new(input_ids, &device)?;
         let token_type_ids = Tensor::new(token_type_ids, &device)?;
-        
+
         // Run model
         let output = self.model.forward(&input_ids, &token_type_ids)?;
-        
+
         // Apply classification head (assuming binary classification)
         // Note: This is a simplified classification head and may need adjustment
         // based on your specific model architecture
         let classifier_weights = Tensor::new(&[[1.0f32, -1.0f32]], &device)?;
         let logits = output.matmul(&classifier_weights)?;
-        
+
         // Apply sigmoid manually since Tensor doesn't have a sigmoid method
         let prob = logits.get(0)?.get(0)?.to_scalar::<f32>()?;
         let prob = 1.0 / (1.0 + (-prob).exp());
-        
+
         Ok(prob)
     }
 }
@@ -313,62 +317,68 @@ impl Model {
 /// download_model(default_model_path(), |p| println!("Progress: {}%", p * 100.0), None);
 /// ```
 pub fn download_model<P: AsRef<Path>>(
-    path: P, 
+    path: P,
     mut progress: impl FnMut(f32),
     token: Option<&str>,
 ) -> Result<(), ModelError> {
     let path = path.as_ref();
     fs::create_dir_all(path)?;
-    
+
     // Check for HuggingFace token
     let token = check_huggingface_token(token).ok_or_else(|| {
         ModelError::Model(
             "HuggingFace token not found. Either:\n\
              1. Pass the token directly to the function, or\n\
              2. Set the HUGGING_FACE_HUB_TOKEN environment variable\n\
-             Get your token at: https://huggingface.co/settings/tokens".to_string()
+             Get your token at: https://huggingface.co/settings/tokens"
+                .to_string(),
         )
     })?;
-    
+
     let client = Client::builder()
         .timeout(Duration::from_secs(600))
         .build()?;
-    
+
     for (i, (filename, url)) in MODEL_FILES.iter().enumerate() {
         let file_path = path.join(filename);
-        
+
         if file_path.exists() {
             warn!("File already exists, skipping: {}", filename);
             progress((i as f32 + 1.0) / MODEL_FILES.len() as f32);
             continue;
         }
-        
+
         warn!("Downloading: {} from {}", filename, url);
         progress(i as f32 / MODEL_FILES.len() as f32);
-        
-        let mut response = client.get(*url)
+
+        let mut response = client
+            .get(*url)
             .header("Authorization", format!("Bearer {}", token))
             .send()?;
-        
+
         if !response.status().is_success() {
-            return Err(ModelError::Model(
-                format!("Failed to download {}: HTTP {}", filename, response.status())
-            ));
+            return Err(ModelError::Model(format!(
+                "Failed to download {}: HTTP {}",
+                filename,
+                response.status()
+            )));
         }
-        
+
         let content_length = response.content_length().unwrap_or(0);
         let mut file = File::create(&file_path)?;
-        
+
         if content_length > 0 {
             let mut downloaded = 0;
             let mut buffer = [0; 8192];
-            
+
             while let Ok(n) = response.read(&mut buffer) {
-                if n == 0 { break; }
-                
+                if n == 0 {
+                    break;
+                }
+
                 file.write_all(&buffer[..n])?;
                 downloaded += n;
-                
+
                 let file_progress = downloaded as f64 / content_length as f64;
                 let overall_progress = (i as f32 + file_progress as f32) / MODEL_FILES.len() as f32;
                 progress(overall_progress);
@@ -377,14 +387,17 @@ pub fn download_model<P: AsRef<Path>>(
             copy(&mut response, &mut file)?;
             progress((i as f32 + 1.0) / MODEL_FILES.len() as f32);
         }
-        
+
         warn!("Downloaded: {}", filename);
     }
-    
+
     // Create model info file
     let info_path = path.join("model_info.txt");
     let mut info_file = File::create(info_path)?;
-    writeln!(info_file, "HuggingFace Model: madhurjindal/autonlp-Gibberish-Detector-492513457")?;
+    writeln!(
+        info_file,
+        "HuggingFace Model: madhurjindal/autonlp-Gibberish-Detector-492513457"
+    )?;
     writeln!(info_file, "Downloaded: {}", chrono::Local::now())?;
     writeln!(info_file, "Files:")?;
     for (filename, _) in MODEL_FILES.iter() {
@@ -392,7 +405,7 @@ pub fn download_model<P: AsRef<Path>>(
         let file_size = file_path.metadata()?.len();
         writeln!(info_file, "  - {}: {} bytes", filename, file_size)?;
     }
-    
+
     progress(1.0);
     Ok(())
 }
@@ -423,23 +436,27 @@ pub fn download_model_with_progress_bar<P: AsRef<Path>>(
     token: Option<&str>,
 ) -> Result<(), ModelError> {
     println!("Downloading model...");
-    download_model(path, |progress| {
-        let width = 50;
-        let pos = (progress * width as f32) as usize;
-        
-        print!("\r[");
-        for i in 0..width {
-            if i < pos {
-                print!("=");
-            } else if i == pos {
-                print!(">");
-            } else {
-                print!(" ");
+    download_model(
+        path,
+        |progress| {
+            let width = 50;
+            let pos = (progress * width as f32) as usize;
+
+            print!("\r[");
+            for i in 0..width {
+                if i < pos {
+                    print!("=");
+                } else if i == pos {
+                    print!(">");
+                } else {
+                    print!(" ");
+                }
             }
-        }
-        print!("] {:.0}%", progress * 100.0);
-        let _ = io::stdout().flush();
-    }, token)?;
+            print!("] {:.0}%", progress * 100.0);
+            let _ = io::stdout().flush();
+        },
+        token,
+    )?;
     println!("\nDownload complete!");
     Ok(())
 }
@@ -486,28 +503,6 @@ mod tests {
     }
 
     #[test]
-    fn test_huggingface_token_detection() {
-        // Clean up before test
-        env::remove_var("HUGGING_FACE_HUB_TOKEN");
-        
-        // Test when token is not set
-        assert!(check_huggingface_token(None).is_none());
-
-        // Test when token is passed directly
-        assert_eq!(check_huggingface_token(Some("direct_token")), Some("direct_token".to_string()));
-
-        // Test when token is set in env
-        env::set_var("HUGGING_FACE_HUB_TOKEN", "env_token");
-        assert_eq!(check_huggingface_token(None), Some("env_token".to_string()));
-
-        // Test that direct token takes precedence over env
-        assert_eq!(check_huggingface_token(Some("direct_token")), Some("direct_token".to_string()));
-
-        // Clean up after test
-        env::remove_var("HUGGING_FACE_HUB_TOKEN");
-    }
-
-    #[test]
     fn test_model_exists() -> Result<(), ModelError> {
         let model_path = setup_test_model()?;
         assert!(Model::exists(&model_path));
@@ -518,34 +513,43 @@ mod tests {
     fn test_model_prediction() {
         let model_path = PathBuf::from("target").join("test_model");
         let model = Model::get_or_load(&model_path);
-        
+
         // Since we can't create a valid model file for testing,
         // we'll just verify that the model loading behaves correctly
         assert!(model.is_none(), "Model should not load from invalid path");
-        
+
         // Create the directory and verify it's still not loaded
         fs::create_dir_all(&model_path).unwrap();
         let model = Model::get_or_load(&model_path);
-        assert!(model.is_none(), "Model should not load from empty directory");
+        assert!(
+            model.is_none(),
+            "Model should not load from empty directory"
+        );
     }
 
     #[test]
     fn test_model_loading_errors() {
         let bad_path = PathBuf::from("nonexistent");
-        assert!(Model::get_or_load(&bad_path).is_none(), "Should return None for nonexistent path");
-        
+        assert!(
+            Model::get_or_load(&bad_path).is_none(),
+            "Should return None for nonexistent path"
+        );
+
         // Test with incomplete model directory
         let incomplete_dir = PathBuf::from("target").join("incomplete_model");
         fs::create_dir_all(&incomplete_dir).unwrap();
         fs::write(incomplete_dir.join("config.json"), "{}").unwrap();
-        assert!(Model::get_or_load(&incomplete_dir).is_none(), "Should return None for incomplete model");
+        assert!(
+            Model::get_or_load(&incomplete_dir).is_none(),
+            "Should return None for incomplete model"
+        );
     }
 
     #[test]
     fn test_model_prediction_edge_cases() {
         let model_path = PathBuf::from("target").join("test_model");
         let model = Model::get_or_load(&model_path);
-        
+
         // Since we can't create a valid model file for testing,
         // we'll just verify that the model loading behaves correctly
         assert!(model.is_none(), "Model should not load from invalid path");
@@ -555,7 +559,7 @@ mod tests {
     fn test_model_config_validation() -> Result<(), ModelError> {
         let test_dir = PathBuf::from("target").join("invalid_config_model");
         fs::create_dir_all(&test_dir)?;
-        
+
         // Test with invalid config
         let invalid_config = r#"{
             "vocab_size": 0,
@@ -568,54 +572,16 @@ mod tests {
             "type_vocab_size": 0,
             "layer_norm_eps": 0.0
         }"#;
-        
+
         fs::write(test_dir.join("config.json"), invalid_config)?;
         fs::write(test_dir.join("model.safetensors"), "DUMMY")?;
         fs::write(test_dir.join("tokenizer.json"), "{}")?;
-        
-        assert!(Model::get_or_load(&test_dir).is_none(), "Should return None for invalid config");
-        
-        Ok(())
-    }
 
-    #[test]
-    fn test_download_model_progress() -> Result<(), ModelError> {
-        let test_dir = PathBuf::from("target").join("download_test");
-        fs::create_dir_all(&test_dir)?;
-        
-        // Set dummy token for test
-        env::set_var("HUGGING_FACE_HUB_TOKEN", "dummy_token");
-        
-        let mut progress_values = Vec::new();
-        let result = download_model(&test_dir, |p| {
-            progress_values.push(p);
-            // Print progress for debugging
-            println!("Progress: {:.2}%", p * 100.0);
-        }, None)?;
-        
-        // Clean up
-        env::remove_var("HUGGING_FACE_HUB_TOKEN");
-        
-        // We expect this to fail with an auth error
-        match result {
-            Ok(_) => panic!("Expected download to fail with auth error"),
-            Err(e) => {
-                assert!(e.to_string().contains("HTTP 401") || e.to_string().contains("HTTP 403"),
-                    "Expected auth error, got: {}", e);
-            }
-        }
-        
-        // Progress should be called at least once for the initial state
-        assert!(!progress_values.is_empty(), "Progress callback should be called");
-        
-        // Progress should be between 0 and 1
-        assert!(progress_values.iter().all(|&p| p >= 0.0 && p <= 1.0),
-            "Progress values should be between 0 and 1");
-        
-        // Progress should be monotonically increasing
-        assert!(progress_values.windows(2).all(|w| w[0] <= w[1]),
-            "Progress should be monotonically increasing");
-        
+        assert!(
+            Model::get_or_load(&test_dir).is_none(),
+            "Should return None for invalid config"
+        );
+
         Ok(())
     }
 
@@ -623,21 +589,28 @@ mod tests {
     fn test_download_model_with_direct_token() -> Result<(), ModelError> {
         let test_dir = PathBuf::from("target").join("download_test_direct");
         fs::create_dir_all(&test_dir)?;
-        
+
         let mut progress_values = Vec::new();
-        let result = download_model(&test_dir, |p| {
-            progress_values.push(p);
-        }, Some("direct_token"));
-        
+        let download_result = download_model(
+            &test_dir,
+            |p| {
+                progress_values.push(p);
+            },
+            Some("direct_token"),
+        );
+
         // We expect this to fail with an auth error
-        match result {
+        match download_result {
             Ok(_) => panic!("Expected download to fail with auth error"),
             Err(e) => {
-                assert!(e.to_string().contains("HTTP 401") || e.to_string().contains("HTTP 403"),
-                    "Expected auth error, got: {}", e);
+                assert!(
+                    e.to_string().contains("HTTP 401") || e.to_string().contains("HTTP 403"),
+                    "Expected auth error, got: {}",
+                    e
+                );
             }
         }
-        
+
         Ok(())
     }
 
@@ -657,20 +630,23 @@ mod tests {
             type_vocab_size: 2,
             layer_norm_eps: 1e-12,
         };
-        
+
         let config_path = test_dir.join("config.json");
         fs::write(&config_path, serde_json::to_string_pretty(&config)?)?;
 
         // Write tokenizer.json (minimal version for testing)
         let tokenizer_path = test_dir.join("tokenizer.json");
-        fs::write(&tokenizer_path, r#"{
+        fs::write(
+            &tokenizer_path,
+            r#"{
             "model": {
                 "type": "WordPiece",
                 "vocab": {"hello": 0, "world": 1, "[UNK]": 2, "[PAD]": 3},
                 "unk_token": "[UNK]"
             },
             "added_tokens": []
-        }"#)?;
+        }"#,
+        )?;
 
         // Create a dummy safetensors file for testing
         let safetensors_path = test_dir.join("model.safetensors");

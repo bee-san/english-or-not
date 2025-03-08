@@ -1,14 +1,17 @@
 use phf::phf_set;
 use std::path::{Path, PathBuf};
 
-mod dictionary;
-mod passwords;
-mod model;
 #[doc(hidden)]
 mod cli;
+mod dictionary;
+mod model;
+mod passwords;
 
 // Core library exports
-pub use model::{ModelError, default_model_path, download_model, model_exists, download_model_with_progress_bar, TokenStatus, check_token_status};
+pub use model::{
+    check_token_status, default_model_path, download_model, download_model_with_progress_bar,
+    model_exists, ModelError, TokenStatus,
+};
 
 // CLI utilities made available for binary integration, but hidden from docs
 pub use cli::download_with_progress_bar;
@@ -61,19 +64,19 @@ impl GibberishDetector {
     pub fn is_gibberish(&self, text: &str, sensitivity: Sensitivity) -> bool {
         // Run basic checks first
         let basic_result = run_basic_checks(text, sensitivity);
-        
+
         // If basic checks say it's gibberish, no need for model
         if basic_result {
             return true;
         }
-        
+
         // Try enhanced detection if available
         if let Some(path) = &self.model_path {
             if let Some(model) = model::Model::get_or_load(path) {
                 return model.predict(text);
             }
         }
-        
+
         // Fall back to basic result
         basic_result
     }
@@ -105,10 +108,10 @@ fn is_english_word(word: &str) -> bool {
 /// ```
 /// // Import the function directly
 /// use gibberish_or_not::is_password;
-/// 
+///
 /// // Test with a common password
 /// assert!(is_password("123456"));
-/// 
+///
 /// // Test with a non-password
 /// assert!(!is_password("not-a-common-password"));
 /// ```
@@ -446,21 +449,24 @@ mod tests {
     // Helper function to log detailed analysis of gibberish detection
     fn log_gibberish_analysis(text: &str) -> bool {
         info!("==== ANALYZING TEXT: '{}' ====", text);
-        
+
         // Clean the text
         let cleaned = clean_text(text);
         debug!("Cleaned text: '{}'", cleaned);
-        
+
         // Check if empty after cleaning
         if cleaned.is_empty() {
             info!("RESULT: GIBBERISH - Text is empty after cleaning");
             return true;
         }
-        
+
         // For very short cleaned text, only check if it's an English word
         if cleaned.len() < 10 {
             let is_english = is_english_word(&cleaned);
-            debug!("Short text check: Is '{}' an English word? {}", cleaned, is_english);
+            debug!(
+                "Short text check: Is '{}' an English word? {}",
+                cleaned, is_english
+            );
             if is_english {
                 info!("RESULT: NOT GIBBERISH - Short text is an English word");
                 return false;
@@ -469,19 +475,23 @@ mod tests {
                 return true;
             }
         }
-        
+
         // Split into words and check for English words
         let words: Vec<&str> = cleaned
             .split_whitespace()
             .filter(|word| !word.is_empty())
             .collect();
-        
+
         debug!("Word count: {}", words.len());
-        
+
         // Count English words
         let english_words: Vec<&&str> = words.iter().filter(|w| is_english_word(w)).collect();
-        debug!("English words: {} ({:?})", english_words.len(), english_words);
-        
+        debug!(
+            "English words: {} ({:?})",
+            english_words.len(),
+            english_words
+        );
+
         let english_word_count = english_words.len();
         let english_word_ratio = if words.is_empty() {
             0.0
@@ -489,110 +499,126 @@ mod tests {
             english_word_count as f64 / words.len() as f64
         };
         debug!("English word ratio: {:.4}", english_word_ratio);
-        
+
         // Check for non-printable characters
         let non_printable_count = text
             .chars()
             .filter(|&c| c < ' ' && c != '\n' && c != '\r' && c != '\t')
             .count();
-        
+
         debug!("Non-printable character count: {}", non_printable_count);
-        
+
         if non_printable_count > 0 {
             info!("RESULT: GIBBERISH - Contains non-printable characters");
             return true;
         }
-        
+
         // Calculate entropy
         let entropy = calculate_entropy(text);
         debug!("Entropy score: {:.4}", entropy);
-        
+
         // Calculate transition score
         let transition_score = calculate_transition_score(text);
         debug!("Transition score: {:.4}", transition_score);
-        
+
         // Calculate vowel-consonant ratio
         let vc_ratio = calculate_vowel_consonant_ratio(text);
         debug!("Vowel-consonant ratio: {:.4}", vc_ratio);
-        
+
         // Check for substrings that are English words
-        let possible_words = (3..=cleaned.len().min(10)).flat_map(|len| {
-            cleaned.as_bytes()
-                .windows(len)
-                .map(|window| std::str::from_utf8(window).unwrap_or(""))
-                .filter(|w| is_english_word(w))
-                .collect::<Vec<_>>()
-        }).collect::<Vec<_>>();
-        
+        let possible_words = (3..=cleaned.len().min(10))
+            .flat_map(|len| {
+                cleaned
+                    .as_bytes()
+                    .windows(len)
+                    .map(|window| std::str::from_utf8(window).unwrap_or(""))
+                    .filter(|w| is_english_word(w))
+                    .collect::<Vec<_>>()
+            })
+            .collect::<Vec<_>>();
+
         debug!("English subwords found: {:?}", possible_words);
-        
+
         // N-gram analysis
         let trigrams = generate_ngrams(&cleaned, 3);
         let quadgrams = generate_ngrams(&cleaned, 4);
-        
+
         let valid_trigrams = trigrams
             .iter()
             .filter(|gram| COMMON_TRIGRAMS.contains(gram.as_str()))
             .collect::<Vec<_>>();
-        
+
         let valid_quadgrams = quadgrams
             .iter()
             .filter(|gram| COMMON_QUADGRAMS.contains(gram.as_str()))
             .collect::<Vec<_>>();
-        
+
         debug!("All trigrams: {:?}", trigrams);
         debug!("Valid trigrams: {:?}", valid_trigrams);
-        
+
         let trigram_score = if trigrams.is_empty() {
             0.0
         } else {
             valid_trigrams.len() as f64 / trigrams.len() as f64
         };
         debug!("Trigram score: {:.4}", trigram_score);
-        
+
         debug!("All quadgrams: {:?}", quadgrams);
         debug!("Valid quadgrams: {:?}", valid_quadgrams);
-        
+
         let quadgram_score = if quadgrams.is_empty() {
             0.0
         } else {
             valid_quadgrams.len() as f64 / quadgrams.len() as f64
         };
         debug!("Quadgram score: {:.4}", quadgram_score);
-        
+
         // Medium sensitivity thresholds
         let english_word_threshold = 0.2;
         let trigram_threshold = 0.15;
         let quadgram_threshold = 0.1;
         let entropy_threshold = 4.5; // Updated from 3.7 to match raw entropy values for English text
         let transition_threshold = 0.7;
-        
+
         // Check thresholds
-        debug!("English word ratio threshold check (> {}): {}", 
-               english_word_threshold, english_word_ratio > english_word_threshold);
-        debug!("Trigram score threshold check (> {}): {}", 
-               trigram_threshold, trigram_score > trigram_threshold);
-        debug!("Quadgram score threshold check (> {}): {}", 
-               quadgram_threshold, quadgram_score > quadgram_threshold);
-        debug!("Entropy threshold check (< {}): {}", 
-               entropy_threshold, entropy < entropy_threshold);
-        debug!("Transition score threshold check (> {}): {}", 
-               transition_threshold, transition_score > transition_threshold);
-        
-        // Final decision for Medium sensitivity
-        let is_gibberish = !(
-            (english_word_ratio > english_word_threshold) ||
-            (english_word_count >= 3) ||
-            (trigram_score > trigram_threshold && quadgram_score > quadgram_threshold) ||
-            (transition_score > transition_threshold && entropy < entropy_threshold)
+        debug!(
+            "English word ratio threshold check (> {}): {}",
+            english_word_threshold,
+            english_word_ratio > english_word_threshold
         );
-        
+        debug!(
+            "Trigram score threshold check (> {}): {}",
+            trigram_threshold,
+            trigram_score > trigram_threshold
+        );
+        debug!(
+            "Quadgram score threshold check (> {}): {}",
+            quadgram_threshold,
+            quadgram_score > quadgram_threshold
+        );
+        debug!(
+            "Entropy threshold check (< {}): {}",
+            entropy_threshold,
+            entropy < entropy_threshold
+        );
+        debug!(
+            "Transition score threshold check (> {}): {}",
+            transition_threshold,
+            transition_score > transition_threshold
+        );
+
+        // Final decision for Medium sensitivity
+        let is_gibberish = !((english_word_ratio > english_word_threshold)
+            || (english_word_count >= 3)
+            || (trigram_score > trigram_threshold && quadgram_score > quadgram_threshold)
+            || (transition_score > transition_threshold && entropy < entropy_threshold));
+
         if is_gibberish {
             info!("RESULT: GIBBERISH - Failed threshold checks");
         } else {
             info!("RESULT: NOT GIBBERISH - Passed threshold checks");
         }
-        
+
         is_gibberish
     }
 
@@ -702,30 +728,34 @@ mod tests {
     fn test_borderline_english_like_gibberish() {
         init_logger();
         let text = "Rcl maocr otmwi lit dnoen oehc 13 iron seah.";
-        
+
         info!("==== TESTING BORDERLINE ENGLISH LIKE GIBBERISH ====");
         let is_gibberish_result = log_gibberish_analysis(text);
-        
+
         // Compare with the actual function result
         let lib_result = is_gibberish(text, Sensitivity::Medium);
         if is_gibberish_result != lib_result {
-            warn!("WARNING: Analysis result ({}) differs from library result ({})",
-                 is_gibberish_result, lib_result);
+            warn!(
+                "WARNING: Analysis result ({}) differs from library result ({})",
+                is_gibberish_result, lib_result
+            );
         }
-        
+
         // This text has English words "lit" and "iron", but is mostly gibberish
         // With our current thresholds, it should be classified as NOT gibberish
         test_with_sensitivities(
-            text,
-            true,  // Low sensitivity should detect as gibberish
+            text, true,  // Low sensitivity should detect as gibberish
             false, // Medium sensitivity accepts this due to "iron" and "lit"
-            false  // High sensitivity accepts this
+            false, // High sensitivity accepts this
         );
     }
 
     #[test]
     fn test_english_without_spaces() {
-        assert!(!is_gibberish("HelloSkeletonsThisIsATestOfEnglishWithoutSpacesIHopeItWorks", Sensitivity::Medium));
+        assert!(!is_gibberish(
+            "HelloSkeletonsThisIsATestOfEnglishWithoutSpacesIHopeItWorks",
+            Sensitivity::Medium
+        ));
     }
 
     #[test]
@@ -810,17 +840,19 @@ mod tests {
     fn test_hello_world() {
         init_logger();
         let text = "Hello, world!";
-        
+
         info!("==== TESTING HELLO WORLD ====");
         let is_gibberish_result = log_gibberish_analysis(text);
-        
+
         // Compare with the actual function result
         let lib_result = is_gibberish(text, Sensitivity::Medium);
         if is_gibberish_result != lib_result {
-            warn!("WARNING: Analysis result ({}) differs from library result ({})",
-                 is_gibberish_result, lib_result);
+            warn!(
+                "WARNING: Analysis result ({}) differs from library result ({})",
+                is_gibberish_result, lib_result
+            );
         }
-        
+
         assert!(!is_gibberish(text, Sensitivity::Medium));
     }
 
@@ -914,17 +946,19 @@ mod tests {
     fn test_common_abbreviation() {
         init_logger();
         let text = "NASA FBI CIA";
-        
+
         info!("==== TESTING COMMON ABBREVIATION ====");
         let is_gibberish_result = log_gibberish_analysis(text);
-        
+
         // Compare with the actual function result
         let lib_result = is_gibberish(text, Sensitivity::Medium);
         if is_gibberish_result != lib_result {
-            warn!("WARNING: Analysis result ({}) differs from library result ({})",
-                 is_gibberish_result, lib_result);
+            warn!(
+                "WARNING: Analysis result ({}) differs from library result ({})",
+                is_gibberish_result, lib_result
+            );
         }
-        
+
         assert!(!is_gibberish(text, Sensitivity::Medium));
     }
 
@@ -932,16 +966,18 @@ mod tests {
     fn test_astar_search_gibberish_2() {
         init_logger();
         let text = "h2=ReOrS9DAnED8o";
-        
+
         let is_gibberish_result = log_gibberish_analysis(text);
-        
+
         // Compare with the actual function result
         let lib_result = is_gibberish(text, Sensitivity::Medium);
         if is_gibberish_result != lib_result {
-            warn!("WARNING: Analysis result ({}) differs from library result ({})",
-                 is_gibberish_result, lib_result);
+            warn!(
+                "WARNING: Analysis result ({}) differs from library result ({})",
+                is_gibberish_result, lib_result
+            );
         }
-        
+
         assert!(is_gibberish(text, Sensitivity::Medium));
     }
 
@@ -1029,16 +1065,18 @@ mod tests {
     fn test_astar_search_gibberish_13() {
         init_logger();
         let text = "and\",nT1cNU)+o^Y";
-        
+
         let is_gibberish_result = log_gibberish_analysis(text);
-        
+
         // Compare with the actual function result
         let lib_result = is_gibberish(text, Sensitivity::Medium);
         if is_gibberish_result != lib_result {
-            warn!("WARNING: Analysis result ({}) differs from library result ({})",
-                 is_gibberish_result, lib_result);
+            warn!(
+                "WARNING: Analysis result ({}) differs from library result ({})",
+                is_gibberish_result, lib_result
+            );
         }
-        
+
         assert!(is_gibberish(text, Sensitivity::Medium));
     }
 
@@ -1182,33 +1220,37 @@ mod tests {
     fn test_astar_search_gibberish_31() {
         init_logger();
         let text = "et";
-        
+
         let is_gibberish_result = log_gibberish_analysis(text);
-        
+
         // Compare with the actual function result
         let lib_result = is_gibberish(text, Sensitivity::Medium);
         if is_gibberish_result != lib_result {
-            warn!("WARNING: Analysis result ({}) differs from library result ({})",
-                 is_gibberish_result, lib_result);
+            warn!(
+                "WARNING: Analysis result ({}) differs from library result ({})",
+                is_gibberish_result, lib_result
+            );
         }
-        
+
         assert!(is_gibberish(text, Sensitivity::Medium));
     }
-    
+
     #[test]
     fn test_astar_search_gibberish_32() {
         init_logger();
         let text = "A";
-        
+
         let is_gibberish_result = log_gibberish_analysis(text);
-        
+
         // Compare with the actual function result
         let lib_result = is_gibberish(text, Sensitivity::Medium);
         if is_gibberish_result != lib_result {
-            warn!("WARNING: Analysis result ({}) differs from library result ({})",
-                 is_gibberish_result, lib_result);
+            warn!(
+                "WARNING: Analysis result ({}) differs from library result ({})",
+                is_gibberish_result, lib_result
+            );
         }
-        
+
         assert!(is_gibberish(text, Sensitivity::Medium));
     }
 
@@ -1246,7 +1288,12 @@ mod tests {
 
     #[test]
     fn test_astar_search_gibberish_37() {
-        test_with_sensitivities("Aastar search algorithm is a path finding algorithm", false, false, false);
+        test_with_sensitivities(
+            "Aastar search algorithm is a path finding algorithm",
+            false,
+            false,
+            false,
+        );
     }
 
     #[test]
@@ -1271,9 +1318,15 @@ mod tests {
     #[test]
     fn test_all_gibberish_examples_medium_sensitivity() {
         // Test all examples with medium sensitivity
-        assert!(is_gibberish("%B:;@J A8 4>35= CG3DFL\\ <G697 ?K HAI", Sensitivity::Medium));
-        assert!(is_gibberish("xgcyzw Snh fabkqta,jedm ioopl  uru v", Sensitivity::Medium));
-        
+        assert!(is_gibberish(
+            "%B:;@J A8 4>35= CG3DFL\\ <G697 ?K HAI",
+            Sensitivity::Medium
+        ));
+        assert!(is_gibberish(
+            "xgcyzw Snh fabkqta,jedm ioopl  uru v",
+            Sensitivity::Medium
+        ));
+
         let binary_gibberish = "\u{1}\0\u{1}\0\0\u{1}\u{1}\u{1}\u{1}\u{1}\0\0\0\0\u{1}\u{1}\0\u{1}\0\0\0\u{1}\u{1}\0\u{1}\0\0\u{1}\u{1}\u{1}\0\u{1}\u{1}\u{1}\0\u{1}\u{1}\u{1}\u{1}\0\0\0\0\u{1}\0\0\0\0\0\u{1}\u{1}\0\u{1}\u{1}\u{1}\u{1}\u{1}\u{1}\0\0\u{1}\u{1}\0\0\u{1}\0\0\0\0\0\u{1}\u{1}\0\0\0\u{1}\0\u{1}\u{1}\0\u{1}\u{1}\0\0\u{1}\u{1}\0\0\0\0\u{1}\u{1}\u{1}\0\0\0\u{1}\u{1}\u{1}\u{1}\0\u{1}\0\u{1}\u{1}\0\u{1}\0\0\0\0\0\u{1}\u{1}\u{1}\0\0\0\u{1}\u{1}\u{1}\u{1}\0\u{1}\0\u{1}\u{1}\u{1}\0\0\0\0\u{1}\u{1}\u{1}\u{1}\0\0\u{1}\0\u{1}\u{1}\u{1}\0\u{1}\0\0\u{1}\u{1}\u{1}\u{1}\0\u{1}\0\0\u{1}\0\u{1}\u{1}\0\0\0\u{1}\0\0\0\0\0\u{1}\u{1}\0\u{1}\0\u{1}\0\u{1}\u{1}\u{1}\0\u{1}\0\u{1}\u{1}\u{1}\0\0\u{1}\0\0\u{1}\u{1}\0\0\u{1}\u{1}\u{1}\u{1}\u{1}\0\0\u{1}\0\u{1}\0\u{1}\0\0\0\0\0\u{1}\u{1}\0\u{1}\u{1}\0\u{1}\u{1}\u{1}\u{1}\u{1}\0\0\u{1}\0\u{1}\0\0\0\0\0\u{1}\u{1}\u{1}\0\u{1}\u{1}\0\u{1}\u{1}\0\u{1}\u{1}\u{1}\u{1}\u{1}\u{1}\u{1}\0\u{1}\u{1}\u{1}\0\u{1}\0\u{1}\u{1}\u{1}\0";
         assert!(is_gibberish(binary_gibberish, Sensitivity::Medium));
     }
@@ -1283,10 +1336,10 @@ mod tests {
         init_logger();
         let text = "ant nehoteeh ntaoe seen e tohetael";
         debug!("Testing gibberish string 1: '{}'", text);
-        
+
         // Use the diagnostic function to see detailed analysis
-        let is_gibberish_result = log_gibberish_analysis(text);
-        
+        let _is_gibberish_result = log_gibberish_analysis(text);
+
         // Test with low sensitivity
         assert!(is_gibberish(text, Sensitivity::Low));
     }
