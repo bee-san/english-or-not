@@ -24,6 +24,12 @@ cargo install gibberish-or-not
 gibberish-or-not = "4.1.1"
 ```
 
+<<<<<<< HEAD
+=======
+<<<<<<< Updated upstream
+## 🎯 Examples
+=======
+>>>>>>> main
 ## 🤖 Enhanced Detection with BERT
 
 The library offers enhanced detection using a BERT model for more accurate results on borderline cases. To use enhanced detection:
@@ -60,17 +66,39 @@ The library offers enhanced detection using a BERT model for more accurate resul
 
 3. Use enhanced detection in your code:
    ```rust
+<<<<<<< HEAD
    use gibberish_or_not::{GibberishDetector, Sensitivity, default_model_path};
    
    // Create detector with model
    let detector = GibberishDetector::with_model(default_model_path());
    
    // Check if enhanced detection is available
+=======
+   // Basic usage - automatically uses enhanced detection if model exists
+   use gibberish_or_not::{is_gibberish, Sensitivity};
+   
+   // The function automatically checks for model at default_model_path()
+   let result = is_gibberish("Your text here", Sensitivity::Medium);
+   
+   // Optional: Explicit model control
+   use gibberish_or_not::{GibberishDetector, default_model_path};
+   
+   // Create detector with model - useful if you want to:
+   // - Use a custom model path
+   // - Check if enhanced detection is available
+   // - Reuse the same model instance
+   let detector = GibberishDetector::with_model(default_model_path());
+>>>>>>> main
    if detector.has_enhanced_detection() {
        let result = detector.is_gibberish("Your text here", Sensitivity::Medium);
    }
    ```
 
+<<<<<<< HEAD
+=======
+Note: The basic detection algorithm will be used as a fallback if the model is not available. The model is automatically loaded from the default path (`default_model_path()`) when using the simple `is_gibberish` function.
+
+>>>>>>> main
 You can also check the token status programmatically:
 ```rust
 use gibberish_or_not::{check_token_status, TokenStatus, default_model_path};
@@ -82,9 +110,14 @@ match check_token_status(default_model_path()) {
 }
 ```
 
+<<<<<<< HEAD
 Note: The basic detection algorithm will be used as a fallback if the model is not available.
 
 ## �� Examples
+=======
+##  Examples
+>>>>>>> Stashed changes
+>>>>>>> main
 
 ```rust
 use gibberish_or_not::{is_gibberish, is_password, Sensitivity};
