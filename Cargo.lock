@@ -41,7 +41,7 @@ dependencies = [
 
 [[package]]
 name = "gibberish-or-not"
-version = "4.1.1"
+version = "5.0.1"
 dependencies = [
  "encoding_rs",
  "env_logger",
