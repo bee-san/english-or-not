@@ -21,10 +21,54 @@
 cargo install gibberish-or-not
 
 # As a library in Cargo.toml
-gibberish-or-not = "4.0.3"
+gibberish-or-not = "4.1.1"
 ```
 
-## 🎯 Examples
+## 🤖 Enhanced Detection with BERT
+
+The library offers enhanced detection using a BERT model for more accurate results on borderline cases. To use enhanced detection:
+
+1. Set up HuggingFace authentication:
+   ```bash
+   # Required for downloading the model
+   export HUGGING_FACE_HUB_TOKEN=your_token_here
+   ```
+   Get your token by:
+   1. Creating an account at https://huggingface.co
+   2. Generating a token at https://huggingface.co/settings/tokens
+
+2. Download the model:
+   ```bash
+   cargo run --bin download_model
+   ```
+
+3. Use enhanced detection in your code:
+   ```rust
+   use gibberish_or_not::{GibberishDetector, Sensitivity, default_model_path};
+   
+   // Create detector with model
+   let detector = GibberishDetector::with_model(default_model_path());
+   
+   // Check if enhanced detection is available
+   if detector.has_enhanced_detection() {
+       let result = detector.is_gibberish("Your text here", Sensitivity::Medium);
+   }
+   ```
+
+You can also check the token status programmatically:
+```rust
+use gibberish_or_not::{check_token_status, TokenStatus, default_model_path};
+
+match check_token_status(default_model_path()) {
+    TokenStatus::Required => println!("HuggingFace token needed"),
+    TokenStatus::Available => println!("Token found, ready to download"),
+    TokenStatus::NotRequired => println!("Model exists, no token needed"),
+}
+```
+
+Note: The basic detection algorithm will be used as a fallback if the model is not available.
+
+## �� Examples
 
 ```rust
 use gibberish_or_not::{is_gibberish, is_password, Sensitivity};
@@ -219,7 +263,18 @@ The library is optimized for speed, with benchmarks showing excellent performanc
 | Long (50-100 chars) | 7-15 μs |
 | Very Long (200+ chars) | ~50 μs |
 
-### Sensitivity Level Impact
+### Enhanced Detection Speed (with BERT)
+
+| Text Length | First Run* | Subsequent Runs |
+|------------|------------|-----------------|
+| Short (10-20 chars) | ~100ms | 5-10ms |
+| Medium (20-50 chars) | ~100ms | 5-15ms |
+| Long (50-100 chars) | ~100ms | 10-20ms |
+| Very Long (200+ chars) | ~100ms | 15-30ms |
+
+*First run includes model loading time. The model is cached after first use.
+
+### Sensitivity Level Impact (Basic Detection)
 
 | Sensitivity | Processing Time |
 |------------|----------------|
@@ -234,6 +289,13 @@ These benchmarks were run on a modern CPU using the Criterion benchmarking frame
 - Optimized character transition matrices
 - Early-exit optimizations for clear cases
 - Zero runtime loading overhead
+- Memory-mapped BERT model loading
+- Model result caching
+
+### Memory Usage
+
+- Basic Detection: < 1MB
+- Enhanced Detection: ~400-500MB (BERT model, memory-mapped)
 
 ## 🤝 Contributing
 
