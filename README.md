@@ -28,18 +28,34 @@ gibberish-or-not = "4.1.1"
 
 The library offers enhanced detection using a BERT model for more accurate results on borderline cases. To use enhanced detection:
 
-1. Set up HuggingFace authentication:
+1. Set up HuggingFace authentication (one of two methods):
+
+   **Method 1: Environment Variable**
    ```bash
-   # Required for downloading the model
+   # Set the token in your environment
    export HUGGING_FACE_HUB_TOKEN=your_token_here
    ```
+
+   **Method 2: Direct Token**
+   ```rust
+   use gibberish_or_not::{download_model_with_progress_bar, default_model_path};
+   
+   // Pass token directly to the download function
+   download_model_with_progress_bar(default_model_path(), Some("your_token_here"))?;
+   ```
+
    Get your token by:
    1. Creating an account at https://huggingface.co
    2. Generating a token at https://huggingface.co/settings/tokens
 
-2. Download the model:
+2. Download the model (choose one method):
    ```bash
+   # Using the CLI (uses environment variable)
    cargo run --bin download_model
+
+   # Or in your code (using direct token)
+   use gibberish_or_not::{download_model_with_progress_bar, default_model_path};
+   download_model_with_progress_bar(default_model_path(), Some("your_token_here"))?;
    ```
 
 3. Use enhanced detection in your code:

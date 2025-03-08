@@ -91,9 +91,12 @@ const MODEL_FILES: [(&str, &str); 3] = [
 ];
 
 /// Status of the HuggingFace token
+///
+/// Used to determine whether a token is needed and if it's available
+/// for downloading the model files.
 #[derive(Debug, Clone, PartialEq)]
 pub enum TokenStatus {
-    /// Token is available and set
+    /// Token is available and set (either via environment variable or direct input)
     Available,
     /// Token is not set but required for model download
     Required,
@@ -102,6 +105,34 @@ pub enum TokenStatus {
 }
 
 /// Check if HuggingFace token is required and available
+///
+/// This function checks whether a token is needed to download the model,
+/// and if needed, whether it's available either via environment variable
+/// or direct input.
+///
+/// # Arguments
+///
+/// * `path` - Path where model files should be located
+///
+/// # Returns
+///
+/// Returns a `TokenStatus` indicating whether a token is needed and available:
+/// * `TokenStatus::NotRequired` - Model exists at path, no token needed
+/// * `TokenStatus::Available` - Token is available (env var or direct)
+/// * `TokenStatus::Required` - Token is needed but not available
+///
+/// # Examples
+///
+/// ```no_run
+/// use gibberish_or_not::{check_token_status, default_model_path, TokenStatus};
+///
+/// let status = check_token_status(default_model_path());
+/// match status {
+///     TokenStatus::NotRequired => println!("Model exists, no token needed"),
+///     TokenStatus::Available => println!("Token is available"),
+///     TokenStatus::Required => println!("Please provide a HuggingFace token"),
+/// }
+/// ```
 pub fn check_token_status<P: AsRef<Path>>(path: P) -> TokenStatus {
     let path = path.as_ref();
     
@@ -111,15 +142,16 @@ pub fn check_token_status<P: AsRef<Path>>(path: P) -> TokenStatus {
     }
     
     // Check if token is set
-    match check_huggingface_token() {
+    match check_huggingface_token(None) {
         Some(_) => TokenStatus::Available,
         None => TokenStatus::Required,
     }
 }
 
-/// Check if HuggingFace token is set
-fn check_huggingface_token() -> Option<String> {
-    std::env::var("HUGGING_FACE_HUB_TOKEN").ok()
+/// Check if HuggingFace token is set, optionally taking a token directly
+fn check_huggingface_token(token: Option<&str>) -> Option<String> {
+    token.map(String::from)
+        .or_else(|| std::env::var("HUGGING_FACE_HUB_TOKEN").ok())
 }
 
 impl Model {
@@ -261,17 +293,40 @@ impl Model {
 }
 
 /// Download model files with progress reporting
-pub fn download_model<P: AsRef<Path>>(path: P, mut progress: impl FnMut(f32)) -> Result<(), ModelError> {
+///
+/// # Arguments
+///
+/// * `path` - Path where model files will be downloaded
+/// * `progress` - Callback function that receives progress updates (0.0 to 1.0)
+/// * `token` - Optional HuggingFace token. If not provided, will attempt to read from HUGGING_FACE_HUB_TOKEN environment variable
+///
+/// # Examples
+///
+/// ```no_run
+/// use gibberish_or_not::{download_model, default_model_path};
+///
+/// // Using direct token
+/// download_model(default_model_path(), |p| println!("Progress: {}%", p * 100.0), Some("your_token_here"));
+///
+/// // Using environment variable
+/// std::env::set_var("HUGGING_FACE_HUB_TOKEN", "your_token_here");
+/// download_model(default_model_path(), |p| println!("Progress: {}%", p * 100.0), None);
+/// ```
+pub fn download_model<P: AsRef<Path>>(
+    path: P, 
+    mut progress: impl FnMut(f32),
+    token: Option<&str>,
+) -> Result<(), ModelError> {
     let path = path.as_ref();
     fs::create_dir_all(path)?;
     
     // Check for HuggingFace token
-    let token = check_huggingface_token().ok_or_else(|| {
+    let token = check_huggingface_token(token).ok_or_else(|| {
         ModelError::Model(
-            "HuggingFace token not found. Please set the HUGGING_FACE_HUB_TOKEN environment variable.\n\
-             1. Create an account at https://huggingface.co\n\
-             2. Generate a token at https://huggingface.co/settings/tokens\n\
-             3. Set the token: export HUGGING_FACE_HUB_TOKEN=your_token_here".to_string()
+            "HuggingFace token not found. Either:\n\
+             1. Pass the token directly to the function, or\n\
+             2. Set the HUGGING_FACE_HUB_TOKEN environment variable\n\
+             Get your token at: https://huggingface.co/settings/tokens".to_string()
         )
     })?;
     
@@ -343,7 +398,30 @@ pub fn download_model<P: AsRef<Path>>(path: P, mut progress: impl FnMut(f32)) ->
 }
 
 /// Download model with a simple progress bar
-pub fn download_model_with_progress_bar<P: AsRef<Path>>(path: P) -> Result<(), ModelError> {
+///
+/// A convenience wrapper around `download_model` that displays a progress bar in the terminal.
+///
+/// # Arguments
+///
+/// * `path` - Path where model files will be downloaded
+/// * `token` - Optional HuggingFace token. If not provided, will attempt to read from HUGGING_FACE_HUB_TOKEN environment variable
+///
+/// # Examples
+///
+/// ```no_run
+/// use gibberish_or_not::{download_model_with_progress_bar, default_model_path};
+///
+/// // Using direct token
+/// download_model_with_progress_bar(default_model_path(), Some("your_token_here"));
+///
+/// // Using environment variable
+/// std::env::set_var("HUGGING_FACE_HUB_TOKEN", "your_token_here");
+/// download_model_with_progress_bar(default_model_path(), None);
+/// ```
+pub fn download_model_with_progress_bar<P: AsRef<Path>>(
+    path: P,
+    token: Option<&str>,
+) -> Result<(), ModelError> {
     println!("Downloading model...");
     download_model(path, |progress| {
         let width = 50;
@@ -361,7 +439,7 @@ pub fn download_model_with_progress_bar<P: AsRef<Path>>(path: P) -> Result<(), M
         }
         print!("] {:.0}%", progress * 100.0);
         let _ = io::stdout().flush();
-    })?;
+    }, token)?;
     println!("\nDownload complete!");
     Ok(())
 }
@@ -413,11 +491,17 @@ mod tests {
         env::remove_var("HUGGING_FACE_HUB_TOKEN");
         
         // Test when token is not set
-        assert!(check_huggingface_token().is_none());
+        assert!(check_huggingface_token(None).is_none());
 
-        // Test when token is set
-        env::set_var("HUGGING_FACE_HUB_TOKEN", "dummy_token");
-        assert_eq!(check_huggingface_token(), Some("dummy_token".to_string()));
+        // Test when token is passed directly
+        assert_eq!(check_huggingface_token(Some("direct_token")), Some("direct_token".to_string()));
+
+        // Test when token is set in env
+        env::set_var("HUGGING_FACE_HUB_TOKEN", "env_token");
+        assert_eq!(check_huggingface_token(None), Some("env_token".to_string()));
+
+        // Test that direct token takes precedence over env
+        assert_eq!(check_huggingface_token(Some("direct_token")), Some("direct_token".to_string()));
 
         // Clean up after test
         env::remove_var("HUGGING_FACE_HUB_TOKEN");
@@ -507,7 +591,7 @@ mod tests {
             progress_values.push(p);
             // Print progress for debugging
             println!("Progress: {:.2}%", p * 100.0);
-        });
+        }, None)?;
         
         // Clean up
         env::remove_var("HUGGING_FACE_HUB_TOKEN");
@@ -531,6 +615,28 @@ mod tests {
         // Progress should be monotonically increasing
         assert!(progress_values.windows(2).all(|w| w[0] <= w[1]),
             "Progress should be monotonically increasing");
+        
+        Ok(())
+    }
+
+    #[test]
+    fn test_download_model_with_direct_token() -> Result<(), ModelError> {
+        let test_dir = PathBuf::from("target").join("download_test_direct");
+        fs::create_dir_all(&test_dir)?;
+        
+        let mut progress_values = Vec::new();
+        let result = download_model(&test_dir, |p| {
+            progress_values.push(p);
+        }, Some("direct_token"));
+        
+        // We expect this to fail with an auth error
+        match result {
+            Ok(_) => panic!("Expected download to fail with auth error"),
+            Err(e) => {
+                assert!(e.to_string().contains("HTTP 401") || e.to_string().contains("HTTP 403"),
+                    "Expected auth error, got: {}", e);
+            }
+        }
         
         Ok(())
     }
