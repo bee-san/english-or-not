@@ -92,6 +92,38 @@ const MODEL_FILES: [(&str, &str); 5] = [
     ("vocab.txt", "https://huggingface.co/gibberish-or-not/gibberish-detector/resolve/main/vocab.txt"),
 ];
 
+/// Status of the HuggingFace token
+#[derive(Debug, Clone, PartialEq)]
+pub enum TokenStatus {
+    /// Token is available and set
+    Available,
+    /// Token is not set but required for model download
+    Required,
+    /// Token is not required (e.g., model already exists)
+    NotRequired,
+}
+
+/// Check if HuggingFace token is required and available
+pub fn check_token_status<P: AsRef<Path>>(path: P) -> TokenStatus {
+    let path = path.as_ref();
+    
+    // If model exists, token is not required
+    if Model::exists(path) {
+        return TokenStatus::NotRequired;
+    }
+    
+    // Check if token is set
+    match check_huggingface_token() {
+        Some(_) => TokenStatus::Available,
+        None => TokenStatus::Required,
+    }
+}
+
+/// Check if HuggingFace token is set
+fn check_huggingface_token() -> Option<String> {
+    std::env::var("HUGGING_FACE_HUB_TOKEN").ok()
+}
+
 impl Model {
     /// Check if model exists at given path
     pub fn exists(path: &Path) -> bool {
@@ -235,6 +267,16 @@ pub fn download_model<P: AsRef<Path>>(path: P, progress: impl Fn(f32)) -> Result
     let path = path.as_ref();
     fs::create_dir_all(path)?;
     
+    // Check for HuggingFace token
+    let token = check_huggingface_token().ok_or_else(|| {
+        ModelError::Model(
+            "HuggingFace token not found. Please set the HUGGING_FACE_HUB_TOKEN environment variable.\n\
+             1. Create an account at https://huggingface.co\n\
+             2. Generate a token at https://huggingface.co/settings/tokens\n\
+             3. Set the token: export HUGGING_FACE_HUB_TOKEN=your_token_here".to_string()
+        )
+    })?;
+    
     let client = Client::builder()
         .timeout(Duration::from_secs(600))
         .build()?;
@@ -251,7 +293,9 @@ pub fn download_model<P: AsRef<Path>>(path: P, progress: impl Fn(f32)) -> Result
         warn!("Downloading: {} from {}", filename, url);
         progress(i as f32 / MODEL_FILES.len() as f32);
         
-        let mut response = client.get(*url).send()?;
+        let mut response = client.get(*url)
+            .header("Authorization", format!("Bearer {}", token))
+            .send()?;
         
         if !response.status().is_success() {
             return Err(ModelError::Model(

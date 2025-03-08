@@ -206,6 +206,35 @@ The algorithm includes fast-path decisions:
 
 This weighting balances accuracy with computational efficiency, prioritizing stronger indicators while still considering multiple aspects of language structure.
 
+## ⚡ Performance
+
+The library is optimized for speed, with benchmarks showing excellent performance across different text types:
+
+### Basic Detection Speed (without BERT)
+
+| Text Length | Processing Time |
+|------------|----------------|
+| Short (10-20 chars) | 2.3-2.7 μs |
+| Medium (20-50 chars) | 4-7 μs |
+| Long (50-100 chars) | 7-15 μs |
+| Very Long (200+ chars) | ~50 μs |
+
+### Sensitivity Level Impact
+
+| Sensitivity | Processing Time |
+|------------|----------------|
+| Low | ~7.3 μs |
+| Medium | ~6.7 μs |
+| High | ~7.9 μs |
+
+These benchmarks were run on a modern CPU using the Criterion benchmarking framework. The library achieves this performance through:
+
+- Perfect hash tables for O(1) dictionary lookups
+- Pre-computed n-gram tables
+- Optimized character transition matrices
+- Early-exit optimizations for clear cases
+- Zero runtime loading overhead
+
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to:

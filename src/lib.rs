@@ -8,7 +8,7 @@ mod model;
 mod cli;
 
 // Core library exports
-pub use model::{ModelError, default_model_path, download_model, model_exists, download_model_with_progress_bar};
+pub use model::{ModelError, default_model_path, download_model, model_exists, download_model_with_progress_bar, TokenStatus, check_token_status};
 
 // CLI utilities made available for binary integration, but hidden from docs
 pub use cli::download_with_progress_bar;

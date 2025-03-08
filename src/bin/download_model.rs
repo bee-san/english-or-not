@@ -1,5 +1,12 @@
 use std::path::PathBuf;
-use gibberish_or_not::{download_model_with_progress_bar, default_model_path, model_exists};
+use gibberish_or_not::{
+    download_model_with_progress_bar, 
+    default_model_path, 
+    model_exists, 
+    ModelError,
+    check_token_status,
+    TokenStatus,
+};
 use clap::Parser;
 
 #[derive(Parser, Debug)]
@@ -14,7 +21,7 @@ struct Args {
     force: bool,
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() {
     let args = Args::parse();
     
     // Get model path
@@ -26,15 +33,36 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if model_exists(&model_path) && !args.force {
         println!("Model already exists at: {}", model_path.display());
         println!("Use --force to download again.");
-        return Ok(());
+        return;
+    }
+    
+    // Check token status
+    match check_token_status(&model_path) {
+        TokenStatus::Required => {
+            eprintln!("HuggingFace token not found. Please set the HUGGING_FACE_HUB_TOKEN environment variable.");
+            eprintln!("1. Create an account at https://huggingface.co");
+            eprintln!("2. Generate a token at https://huggingface.co/settings/tokens");
+            eprintln!("3. Set the token: export HUGGING_FACE_HUB_TOKEN=your_token_here");
+            return;
+        }
+        TokenStatus::NotRequired => {
+            println!("Model exists, no token required.");
+        }
+        TokenStatus::Available => {
+            println!("HuggingFace token found, proceeding with download...");
+        }
     }
     
     println!("Downloading model to: {}", model_path.display());
-    download_model_with_progress_bar(&model_path)?;
-    
-    println!("Model downloaded successfully!");
-    println!("You can now use enhanced detection with:");
-    println!("  cargo run --bin enhanced_detection");
-    
-    Ok(())
+    match download_model_with_progress_bar(&model_path) {
+        Ok(_) => {
+            println!("\nModel downloaded successfully!");
+            println!("You can now use enhanced detection with:");
+            println!("  cargo run --bin enhanced_detection");
+        }
+        Err(e) => {
+            eprintln!("\nError downloading model: {}", e);
+            eprintln!("If this is an authentication error, make sure your HuggingFace token is correct.");
+        }
+    }
 }
