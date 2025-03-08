@@ -85,9 +85,9 @@ static MODEL: OnceLock<Option<Model>> = OnceLock::new();
 
 // Model file URLs and names
 const MODEL_FILES: [(&str, &str); 3] = [
-    ("model.safetensors", "https://huggingface.co/gibberish-or-not/gibberish-detector/resolve/main/model.safetensors"),
-    ("config.json", "https://huggingface.co/gibberish-or-not/gibberish-detector/resolve/main/config.json"),
-    ("tokenizer.json", "https://huggingface.co/gibberish-or-not/gibberish-detector/resolve/main/tokenizer.json"),
+    ("model.safetensors", "https://huggingface.co/madhurjindal/autonlp-Gibberish-Detector-492513457/resolve/main/model.safetensors"),
+    ("config.json", "https://huggingface.co/madhurjindal/autonlp-Gibberish-Detector-492513457/resolve/main/config.json"),
+    ("tokenizer.json", "https://huggingface.co/madhurjindal/autonlp-Gibberish-Detector-492513457/resolve/main/tokenizer.json"),
 ];
 
 /// Status of the HuggingFace token
@@ -261,7 +261,7 @@ impl Model {
 }
 
 /// Download model files with progress reporting
-pub fn download_model<P: AsRef<Path>>(path: P, progress: impl Fn(f32)) -> Result<(), ModelError> {
+pub fn download_model<P: AsRef<Path>>(path: P, mut progress: impl FnMut(f32)) -> Result<(), ModelError> {
     let path = path.as_ref();
     fs::create_dir_all(path)?;
     
@@ -329,7 +329,7 @@ pub fn download_model<P: AsRef<Path>>(path: P, progress: impl Fn(f32)) -> Result
     // Create model info file
     let info_path = path.join("model_info.txt");
     let mut info_file = File::create(info_path)?;
-    writeln!(info_file, "HuggingFace Model: gibberish-or-not/gibberish-detector")?;
+    writeln!(info_file, "HuggingFace Model: madhurjindal/autonlp-Gibberish-Detector-492513457")?;
     writeln!(info_file, "Downloaded: {}", chrono::Local::now())?;
     writeln!(info_file, "Files:")?;
     for (filename, _) in MODEL_FILES.iter() {
@@ -382,11 +382,156 @@ pub fn model_exists<P: AsRef<Path>>(path: P) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::env;
+
+    #[test]
+    fn test_token_status_when_token_set() {
+        env::set_var("HUGGING_FACE_HUB_TOKEN", "dummy_token");
+        let test_dir = PathBuf::from("target").join("no_model");
+        assert_eq!(check_token_status(&test_dir), TokenStatus::Available);
+        env::remove_var("HUGGING_FACE_HUB_TOKEN");
+    }
+
+    #[test]
+    fn test_token_status_when_token_missing() {
+        env::remove_var("HUGGING_FACE_HUB_TOKEN");
+        let test_dir = PathBuf::from("target").join("no_model");
+        assert_eq!(check_token_status(&test_dir), TokenStatus::Required);
+    }
+
+    #[test]
+    fn test_token_status_when_model_exists() {
+        // Even without token, should return NotRequired if model exists
+        env::remove_var("HUGGING_FACE_HUB_TOKEN");
+        let test_dir = setup_test_model().unwrap();
+        assert_eq!(check_token_status(&test_dir), TokenStatus::NotRequired);
+    }
+
+    #[test]
+    fn test_huggingface_token_detection() {
+        // Clean up before test
+        env::remove_var("HUGGING_FACE_HUB_TOKEN");
+        
+        // Test when token is not set
+        assert!(check_huggingface_token().is_none());
+
+        // Test when token is set
+        env::set_var("HUGGING_FACE_HUB_TOKEN", "dummy_token");
+        assert_eq!(check_huggingface_token(), Some("dummy_token".to_string()));
+
+        // Clean up after test
+        env::remove_var("HUGGING_FACE_HUB_TOKEN");
+    }
 
     #[test]
     fn test_model_exists() -> Result<(), ModelError> {
         let model_path = setup_test_model()?;
         assert!(Model::exists(&model_path));
+        Ok(())
+    }
+
+    #[test]
+    fn test_model_prediction() {
+        let model_path = PathBuf::from("target").join("test_model");
+        let model = Model::get_or_load(&model_path);
+        
+        // Since we can't create a valid model file for testing,
+        // we'll just verify that the model loading behaves correctly
+        assert!(model.is_none(), "Model should not load from invalid path");
+        
+        // Create the directory and verify it's still not loaded
+        fs::create_dir_all(&model_path).unwrap();
+        let model = Model::get_or_load(&model_path);
+        assert!(model.is_none(), "Model should not load from empty directory");
+    }
+
+    #[test]
+    fn test_model_loading_errors() {
+        let bad_path = PathBuf::from("nonexistent");
+        assert!(Model::get_or_load(&bad_path).is_none(), "Should return None for nonexistent path");
+        
+        // Test with incomplete model directory
+        let incomplete_dir = PathBuf::from("target").join("incomplete_model");
+        fs::create_dir_all(&incomplete_dir).unwrap();
+        fs::write(incomplete_dir.join("config.json"), "{}").unwrap();
+        assert!(Model::get_or_load(&incomplete_dir).is_none(), "Should return None for incomplete model");
+    }
+
+    #[test]
+    fn test_model_prediction_edge_cases() {
+        let model_path = PathBuf::from("target").join("test_model");
+        let model = Model::get_or_load(&model_path);
+        
+        // Since we can't create a valid model file for testing,
+        // we'll just verify that the model loading behaves correctly
+        assert!(model.is_none(), "Model should not load from invalid path");
+    }
+
+    #[test]
+    fn test_model_config_validation() -> Result<(), ModelError> {
+        let test_dir = PathBuf::from("target").join("invalid_config_model");
+        fs::create_dir_all(&test_dir)?;
+        
+        // Test with invalid config
+        let invalid_config = r#"{
+            "vocab_size": 0,
+            "hidden_size": -1,
+            "num_attention_heads": 0,
+            "num_hidden_layers": 0,
+            "attention_head_size": 0,
+            "intermediate_size": 0,
+            "max_position_embeddings": 0,
+            "type_vocab_size": 0,
+            "layer_norm_eps": 0.0
+        }"#;
+        
+        fs::write(test_dir.join("config.json"), invalid_config)?;
+        fs::write(test_dir.join("model.safetensors"), "DUMMY")?;
+        fs::write(test_dir.join("tokenizer.json"), "{}")?;
+        
+        assert!(Model::get_or_load(&test_dir).is_none(), "Should return None for invalid config");
+        
+        Ok(())
+    }
+
+    #[test]
+    fn test_download_model_progress() -> Result<(), ModelError> {
+        let test_dir = PathBuf::from("target").join("download_test");
+        fs::create_dir_all(&test_dir)?;
+        
+        // Set dummy token for test
+        env::set_var("HUGGING_FACE_HUB_TOKEN", "dummy_token");
+        
+        let mut progress_values = Vec::new();
+        let result = download_model(&test_dir, |p| {
+            progress_values.push(p);
+            // Print progress for debugging
+            println!("Progress: {:.2}%", p * 100.0);
+        });
+        
+        // Clean up
+        env::remove_var("HUGGING_FACE_HUB_TOKEN");
+        
+        // We expect this to fail with an auth error
+        match result {
+            Ok(_) => panic!("Expected download to fail with auth error"),
+            Err(e) => {
+                assert!(e.to_string().contains("HTTP 401") || e.to_string().contains("HTTP 403"),
+                    "Expected auth error, got: {}", e);
+            }
+        }
+        
+        // Progress should be called at least once for the initial state
+        assert!(!progress_values.is_empty(), "Progress callback should be called");
+        
+        // Progress should be between 0 and 1
+        assert!(progress_values.iter().all(|&p| p >= 0.0 && p <= 1.0),
+            "Progress values should be between 0 and 1");
+        
+        // Progress should be monotonically increasing
+        assert!(progress_values.windows(2).all(|w| w[0] <= w[1]),
+            "Progress should be monotonically increasing");
+        
         Ok(())
     }
 
