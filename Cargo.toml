@@ -33,6 +33,12 @@ dirs = "5.0"
 thiserror = "1.0"
 chrono = "0.4"
 env_logger = "0.10"
+# Candle dependencies
+candle-core = "0.3.1"
+candle-nn = "0.3.1"
+candle-transformers = "0.3.1"
+tokenizers = "0.14.1"
+safetensors = "0.3.1"
 
 [[bin]]
 name = "dictionary"
@@ -53,3 +59,7 @@ path = "src/bin/download_model.rs"
 [[bin]]
 name = "enhanced_detection"
 path = "src/bin/enhanced_detection.rs"
+
+[[bin]]
+name = "test_sensitivity"
+path = "src/bin/test_sensitivity.rs"

@@ -1,55 +1,40 @@
-use std::path::{Path, PathBuf};
-use std::io::{self, Write};
-use gibberish_or_not::{download_model, default_model_path, model_exists};
-use clap::{Parser, CommandFactory};
+use std::path::PathBuf;
+use gibberish_or_not::{download_model_with_progress_bar, default_model_path, model_exists};
+use clap::Parser;
 
 #[derive(Parser, Debug)]
-#[command(author, version, about = "Download enhanced gibberish detection model")]
+#[command(author, version, about = "Download the enhanced gibberish detection model")]
 struct Args {
-    /// Path where to save the model files (default: system cache directory)
+    /// Path to download model to (default: system cache directory)
     #[arg(short, long)]
-    path: Option<PathBuf>,
-
-    /// Force download even if files exist
+    model_path: Option<String>,
+    
+    /// Force download even if model already exists
     #[arg(short, long)]
     force: bool,
 }
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
     
     // Get model path
-    let path = args.path.unwrap_or_else(default_model_path);
+    let model_path = args.model_path
+        .map(|p| PathBuf::from(p))
+        .unwrap_or_else(default_model_path);
     
-    println!("Downloading model to: {}", path.display());
-
     // Check if model already exists
-    if !args.force && model_exists(&path) {
-        println!("Model already exists at: {}", path.display());
-        println!("Use --force to download again");
-        return;
+    if model_exists(&model_path) && !args.force {
+        println!("Model already exists at: {}", model_path.display());
+        println!("Use --force to download again.");
+        return Ok(());
     }
     
-    // Download with progress reporting
-    match download_model(&path, |progress| {
-        print!("\rDownload progress: {:.1}%", progress * 100.0);
-        let _ = io::stdout().flush(); // Ignore flush errors
-    }) {
-        Ok(_) => {
-            println!("\nModel downloaded successfully to: {}", path.display());
-            print_usage_help(&path);
-        },
-        Err(e) => {
-            eprintln!("\nError downloading model: {}", e);
-            std::process::exit(1);
-        }
-    }
-}
-
-fn print_usage_help(path: &Path) {
-    println!("\nYou can now use enhanced gibberish detection with:");
-    println!("cargo run --bin enhanced_detection");
-    println!("\nOr in your code:");
-    println!("let detector = GibberishDetector::with_model(\"{}\");", path.display());
-    println!("let result = detector.is_gibberish(\"text\", Sensitivity::Medium);");
+    println!("Downloading model to: {}", model_path.display());
+    download_model_with_progress_bar(&model_path)?;
+    
+    println!("Model downloaded successfully!");
+    println!("You can now use enhanced detection with:");
+    println!("  cargo run --bin enhanced_detection");
+    
+    Ok(())
 }
