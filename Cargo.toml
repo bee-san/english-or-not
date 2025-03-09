@@ -56,10 +56,6 @@ name = "passwords"
 path = "src/bin/passwords.rs"
 
 [[bin]]
-name = "download_model"
-path = "src/bin/download_model.rs"
-
-[[bin]]
 name = "enhanced_detection"
 path = "src/bin/enhanced_detection.rs"
 

@@ -1,6 +1,5 @@
-use clap::{CommandFactory, Parser};
+use clap::{Parser};
 use gibberish_or_not::{default_model_path, model_exists, GibberishDetector, Sensitivity};
-use std::env;
 use std::io::{self, BufRead};
 
 #[derive(Parser, Debug)]

@@ -1,4 +1,4 @@
-use phf::phf_set;
+`use phf::phf_set;
 use std::path::{Path, PathBuf};
 
 #[doc(hidden)]
@@ -14,6 +14,7 @@ pub use model::{
 };
 
 // CLI utilities made available for binary integration, but hidden from docs
+#[doc(hidden)]
 pub use cli::download_with_progress_bar;
 
 /// Sensitivity level for gibberish detection

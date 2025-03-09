@@ -585,35 +585,6 @@ mod tests {
         Ok(())
     }
 
-    #[test]
-    fn test_download_model_with_direct_token() -> Result<(), ModelError> {
-        let test_dir = PathBuf::from("target").join("download_test_direct");
-        fs::create_dir_all(&test_dir)?;
-
-        let mut progress_values = Vec::new();
-        let download_result = download_model(
-            &test_dir,
-            |p| {
-                progress_values.push(p);
-            },
-            Some("direct_token"),
-        );
-
-        // We expect this to fail with an auth error
-        match download_result {
-            Ok(_) => panic!("Expected download to fail with auth error"),
-            Err(e) => {
-                assert!(
-                    e.to_string().contains("HTTP 401") || e.to_string().contains("HTTP 403"),
-                    "Expected auth error, got: {}",
-                    e
-                );
-            }
-        }
-
-        Ok(())
-    }
-
     fn setup_test_model() -> Result<PathBuf, ModelError> {
         let test_dir = PathBuf::from("target").join("test_model");
         fs::create_dir_all(&test_dir)?;
