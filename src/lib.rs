@@ -1,4 +1,4 @@
-`use phf::phf_set;
+use phf::phf_set;
 use std::path::{Path, PathBuf};
 
 #[doc(hidden)]
