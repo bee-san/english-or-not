@@ -1,4 +1,4 @@
-use clap::{Parser};
+use clap::Parser;
 use gibberish_or_not::{default_model_path, model_exists, GibberishDetector, Sensitivity};
 use std::io::{self, BufRead};
 

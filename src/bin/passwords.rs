@@ -72,7 +72,7 @@ fn process_file(path: &Path, seen_passwords: &mut HashSet<String>) -> io::Result
 
     for line in text.lines() {
         let password = line.trim();
-        if !password.is_empty() && !password.contains(char::is_whitespace) {
+        if !password.is_empty() && !password.contains(char::is_whitespace) && password.len() > 3 {
             seen_passwords.insert(password.to_owned()); // Don't convert case, keep original
         }
     }

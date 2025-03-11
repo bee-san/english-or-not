@@ -24,7 +24,7 @@ pub enum ModelError {
 
     #[error("Model error: {0}")]
     Model(String),
-
+ 
     #[error("JSON error: {0}")]
     Json(#[from] serde_json::Error),
 
@@ -214,6 +214,7 @@ impl Model {
 
         // Load model weights using Candle
         let model_path = path.join("model.safetensors");
+        // TODO we could probably use GPU optionally
         let device = Device::Cpu;
 
         // Create VarBuilder from safetensors file
@@ -258,7 +259,7 @@ impl Model {
             Ok(score) => score < 0.5, // Threshold for gibberish
             Err(e) => {
                 warn!("Prediction error: {}", e);
-                true // Default to gibberish on error
+                false // Default to not gibberish on error, becuase its already passed all the other gibberish checkers
             }
         }
     }
