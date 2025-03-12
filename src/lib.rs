@@ -63,7 +63,11 @@ impl GibberishDetector {
 
     /// Main detection function
     pub fn is_gibberish(&self, text: &str, sensitivity: Sensitivity) -> bool {
+        if !calculate_string_worth(&text) {
+            False
+        }
         // Run basic checks first
+        // returns true if its gibberish
         let basic_result = run_basic_checks(text, sensitivity);
 
         // If basic checks say it's gibberish, no need for model
@@ -74,6 +78,7 @@ impl GibberishDetector {
         // Try enhanced detection if available
         if let Some(path) = &self.model_path {
             if let Some(model) = model::Model::get_or_load(path) {
+                // model returns True if its gibberish
                 return model.predict(text);
             }
         }
@@ -81,6 +86,37 @@ impl GibberishDetector {
         // Fall back to basic result
         basic_result
     }
+}
+
+/// is it worth it to calculate this string?
+pub fn calculate_string_worth(s: &str) -> bool {
+    // Check for high percentage of invisible characters
+    let non_printable_ratio = calculate_non_printable_ratio(s);
+    if non_printable_ratio > 0.5 {
+        False // Return lowest quality for strings with >50% invisible chars
+    }
+    if s.len() < 4 {
+        False
+    }
+    True
+}
+
+/// Calculate the ratio of non-printable characters in a string
+/// Returns a value between 0.0 (all printable) and 1.0 (all non-printable)
+pub fn calculate_non_printable_ratio(text: &str) -> f32 {
+    if text.is_empty() {
+        return 1.0;
+    }
+
+    let non_printable_count = text
+        .chars()
+        .filter(|&c| {
+            // Only count control characters (except common whitespace) and non-ASCII as non-printable
+            (c.is_control() && c != '\n' && c != '\r' && c != '\t') || !c.is_ascii()
+        })
+        .count();
+
+    non_printable_count as f32 / text.len() as f32
 }
 
 fn is_english_word(word: &str) -> bool {

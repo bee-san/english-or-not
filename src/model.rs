@@ -24,7 +24,7 @@ pub enum ModelError {
 
     #[error("Model error: {0}")]
     Model(String),
- 
+
     #[error("JSON error: {0}")]
     Json(#[from] serde_json::Error),
 
