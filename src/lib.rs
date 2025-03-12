@@ -63,8 +63,8 @@ impl GibberishDetector {
 
     /// Main detection function
     pub fn is_gibberish(&self, text: &str, sensitivity: Sensitivity) -> bool {
-        if !calculate_string_worth(&text) {
-            False
+        if is_string_bad_quality(&text) {
+            return true;
         }
         // Run basic checks first
         // returns true if its gibberish
@@ -89,25 +89,21 @@ impl GibberishDetector {
 }
 
 /// is it worth it to calculate this string?
-pub fn calculate_string_worth(s: &str) -> bool {
+pub fn is_string_bad_quality(s: &str) -> bool {
     // Check for high percentage of invisible characters
     let non_printable_ratio = calculate_non_printable_ratio(s);
     if non_printable_ratio > 0.5 {
-        False // Return lowest quality for strings with >50% invisible chars
+        return true; // Return lowest quality for strings with >50% invisible chars
     }
-    if s.len() < 4 {
-        False
+    if s.len() <= 3 {
+        return true;
     }
-    True
+    return false
 }
 
 /// Calculate the ratio of non-printable characters in a string
 /// Returns a value between 0.0 (all printable) and 1.0 (all non-printable)
 pub fn calculate_non_printable_ratio(text: &str) -> f32 {
-    if text.is_empty() {
-        return 1.0;
-    }
-
     let non_printable_count = text
         .chars()
         .filter(|&c| {
